@@ -12,6 +12,8 @@ Works with Claude Code, Claude Cowork, Cursor, Codex, Windsurf, and more.
 npx hanzi-in-chrome setup
 ```
 
+Detects your browsers, installs the extension, finds AI agents on your machine (Claude Code, Cursor, etc.), and adds Hanzi to each one.
+
 <details>
 <summary>Manual setup</summary>
 
@@ -70,10 +72,6 @@ Reusable workflows. Open source — [add your own](https://github.com/hanzili/ll
 | `browser_status` | Check progress. |
 | `browser_stop` | Stop a task. |
 | `browser_screenshot` | Capture current page as PNG. |
-
-## Pricing
-
-**Free:** 100 tasks. **Pro:** $29 one-time, unlimited. **[Buy Pro](https://hanziinchrome.lemonsqueezy.com/checkout/buy/14a16cd3-47d7-42c9-a870-b44aa070cc44)**
 
 ## License
 
