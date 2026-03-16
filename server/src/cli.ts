@@ -415,10 +415,12 @@ function detectSkillsDir(skillName: string): string {
 async function cmdSetup(): Promise<void> {
   const { runSetup } = await import('./cli/setup.js');
   let only: string | undefined;
+  let yes = false;
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--only' && args[i + 1]) only = args[++i];
+    if (args[i] === '--yes' || args[i] === '-y') yes = true;
   }
-  await runSetup({ only });
+  await runSetup({ only, yes });
 }
 
 function cmdHelp(): void {

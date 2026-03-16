@@ -34,7 +34,17 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
-function spinner(text) {
+// Plain log for non-interactive mode (no ANSI, no spinners)
+function log(msg) {
+    // Strip ANSI codes for clean output
+    const clean = msg.replace(/\x1b\[[0-9;]*m/g, '');
+    console.log(clean);
+}
+function spinner(text, isInteractive = true) {
+    if (!isInteractive) {
+        log(`  ...  ${text}`);
+        return { stop: (final) => log(`  ${final}`) };
+    }
     let i = 0;
     const id = setInterval(() => {
         process.stdout.write(`\r  ${c.cyan(SPINNER_FRAMES[i++ % SPINNER_FRAMES.length])}  ${text}`);
@@ -216,22 +226,26 @@ function openInBrowser(browser, url) {
         execSync(`open "${url}" 2>/dev/null || xdg-open "${url}" 2>/dev/null`, { stdio: 'ignore' });
     }
 }
-async function ensureExtension() {
+async function ensureExtension(isInteractive) {
     // Already connected?
     if (await isRelayRunning())
         return true;
     // Detect browsers
     const browsers = detectBrowsers();
     if (browsers.length === 0) {
-        console.log(`  ${c.yellow('●')}  No Chromium browser found. Install the extension manually:`);
-        console.log(`     ${c.cyan(EXTENSION_URL)}\n`);
+        const msg = `No Chromium browser found. Install the extension manually: ${EXTENSION_URL}`;
+        isInteractive
+            ? console.log(`  ${c.yellow('●')}  ${msg}\n`)
+            : log(`  ●  ${msg}`);
         return false;
     }
-    // Pick browser
+    // Pick browser — auto-select first in non-interactive mode
     let browser;
-    if (browsers.length === 1) {
+    if (!isInteractive || browsers.length === 1) {
         browser = browsers[0];
-        console.log(`  ${c.green('✓')}  Found ${c.bold(browser.name)}`);
+        isInteractive
+            ? console.log(`  ${c.green('✓')}  Found ${c.bold(browser.name)}`)
+            : log(`  ✓  Found ${browser.name}`);
     }
     else {
         console.log(`  ${c.green('✓')}  Found ${c.bold(String(browsers.length))} browsers\n`);
@@ -248,10 +262,11 @@ async function ensureExtension() {
         browser = browsers[idx] || browsers[0];
     }
     // Open Chrome Web Store
-    console.log(`\n     Opening Chrome Web Store in ${browser.name}...\n`);
+    const openMsg = `Opening Chrome Web Store in ${browser.name}...`;
+    isInteractive ? console.log(`\n     ${openMsg}\n`) : log(`     ${openMsg}`);
     openInBrowser(browser, EXTENSION_URL);
     // Poll for extension
-    const sp = spinner('Waiting for extension to connect...');
+    const sp = spinner('Waiting for extension to connect...', isInteractive);
     for (let i = 0; i < 90; i++) { // 3 minutes max
         await sleep(2000);
         if (await isRelayRunning()) {
@@ -260,7 +275,9 @@ async function ensureExtension() {
         }
     }
     sp.stop(`${c.yellow('●')}  Timed out waiting for extension`);
-    console.log(`     ${c.dim('Install the extension, then run setup again.')}`);
+    isInteractive
+        ? console.log(`     ${c.dim('Install the extension, then run setup again.')}`)
+        : log('     Install the extension, then run setup again.');
     return false;
 }
 // ── Readline ───────────────────────────────────────────────────────────
@@ -417,28 +434,51 @@ async function promptCredentials() {
 export async function runSetup(options = {}) {
     const registry = getAgentRegistry();
     const only = options.only;
+    const interactive = options.yes ? false : (process.stdin.isTTY ?? false);
     // ── Banner ──
-    console.log(BANNER);
+    if (interactive) {
+        console.log(BANNER);
+    }
+    else {
+        log('\nHanzi Setup (non-interactive)\n');
+    }
     // ── Step 0: Chrome extension ──
-    console.log(`  ${c.dim('step 1')}  ${c.bold('Chrome extension')}`);
-    console.log(`  ${c.dim('       Hanzi needs a Chrome extension to control your browser.')}\n`);
-    const sp0 = spinner('Looking for the extension...');
-    await sleep(400);
+    if (interactive) {
+        console.log(`  ${c.dim('step 1')}  ${c.bold('Chrome extension')}`);
+        console.log(`  ${c.dim('       Hanzi needs a Chrome extension to control your browser.')}\n`);
+    }
+    else {
+        log('  Step 1: Chrome extension');
+    }
+    const sp0 = spinner('Looking for the extension...', interactive);
+    if (interactive)
+        await sleep(400);
     const relayUp = await isRelayRunning();
     if (relayUp) {
         sp0.stop(`${c.green('✓')}  Chrome extension is running`);
     }
     else {
         sp0.stop(`${c.dim('○')}  Chrome extension not found`);
-        console.log('');
-        await ensureExtension();
+        if (interactive) {
+            console.log('');
+            await ensureExtension(interactive);
+        }
+        else {
+            log(`     Install from: ${EXTENSION_URL}`);
+        }
     }
     // ── Step 1: Detect agents ──
-    console.log('');
-    console.log(`  ${c.dim('step 2')}  ${c.bold('MCP server')}`);
-    console.log(`  ${c.dim('       Adding Hanzi as an MCP tool to your coding agents.')}\n`);
-    const sp1 = spinner('Scanning for agents on this machine...');
-    await sleep(600);
+    if (interactive) {
+        console.log('');
+        console.log(`  ${c.dim('step 2')}  ${c.bold('MCP server')}`);
+        console.log(`  ${c.dim('       Adding Hanzi as an MCP tool to your coding agents.')}\n`);
+    }
+    else {
+        log('\n  Step 2: MCP server');
+    }
+    const sp1 = spinner('Scanning for agents on this machine...', interactive);
+    if (interactive)
+        await sleep(600);
     const detected = [];
     for (const agent of registry) {
         if (only && agent.slug !== only)
@@ -446,29 +486,43 @@ export async function runSetup(options = {}) {
         if (agent.detect())
             detected.push(agent);
     }
-    sp1.stop(`${c.green('✓')}  Found ${c.bold(String(detected.length))} agent${detected.length === 1 ? '' : 's'} on this machine`);
-    console.log('');
+    sp1.stop(interactive
+        ? `${c.green('✓')}  Found ${c.bold(String(detected.length))} agent${detected.length === 1 ? '' : 's'} on this machine`
+        : `  ✓  Found ${detected.length} agent${detected.length === 1 ? '' : 's'} on this machine`);
+    const out = interactive ? console.log : log;
+    out('');
     for (const agent of registry) {
         if (only && agent.slug !== only)
             continue;
         const found = detected.includes(agent);
         const path = agent.configPath ? agent.configPath() : '';
-        if (found) {
-            console.log(`     ${c.green('✓')}  ${agent.name.padEnd(16)} ${c.dim(path)}`);
+        if (interactive) {
+            if (found) {
+                console.log(`     ${c.green('✓')}  ${agent.name.padEnd(16)} ${c.dim(path)}`);
+            }
+            else {
+                console.log(`     ${c.dim('○')}  ${c.dim(agent.name)}`);
+            }
         }
         else {
-            console.log(`     ${c.dim('○')}  ${c.dim(agent.name)}`);
+            out(`     ${found ? '✓' : '○'}  ${agent.name}${path ? ` (${path})` : ''}`);
         }
     }
-    console.log('');
+    out('');
     if (detected.length === 0) {
-        console.log(`  ${c.yellow('●')}  No agents found. Add this to your agent's MCP config manually:\n`);
-        console.log(`     ${c.cyan(JSON.stringify({ mcpServers: { browser: MCP_ENTRY } }))}\n`);
+        if (interactive) {
+            console.log(`  ${c.yellow('●')}  No agents found. Add this to your agent's MCP config manually:\n`);
+            console.log(`     ${c.cyan(JSON.stringify({ mcpServers: { browser: MCP_ENTRY } }))}\n`);
+        }
+        else {
+            log(`  ●  No agents found. Add manually: ${JSON.stringify({ mcpServers: { browser: MCP_ENTRY } })}`);
+        }
         return;
     }
     // ── Step 2: Configure agents ──
-    const sp2 = spinner('Adding Hanzi MCP server to each agent...');
-    await sleep(400);
+    const sp2 = spinner('Adding Hanzi MCP server to each agent...', interactive);
+    if (interactive)
+        await sleep(400);
     const results = [];
     for (const agent of detected) {
         let result;
@@ -483,34 +537,68 @@ export async function runSetup(options = {}) {
     }
     const configured = results.filter(r => r.status === 'configured').length;
     const alreadyDone = results.filter(r => r.status === 'already-configured').length;
-    sp2.stop(`${c.green('✓')}  ${configured > 0 ? `Added to ${c.bold(String(configured))} agent${configured === 1 ? '' : 's'}` : 'All agents already have Hanzi'}`);
-    console.log('');
-    for (const result of results) {
-        if (result.status === 'configured') {
-            console.log(`     ${c.green('✓')}  ${result.agent.padEnd(16)} ${c.green('added')}`);
-        }
-        else if (result.status === 'already-configured') {
-            console.log(`     ${c.dim('●')}  ${result.agent.padEnd(16)} ${c.dim('already has Hanzi')}`);
-        }
-        else {
-            console.log(`     ${c.red('✗')}  ${result.agent.padEnd(16)} ${c.red(result.detail)}`);
+    if (interactive) {
+        sp2.stop(`${c.green('✓')}  ${configured > 0 ? `Added to ${c.bold(String(configured))} agent${configured === 1 ? '' : 's'}` : 'All agents already have Hanzi'}`);
+        console.log('');
+        for (const result of results) {
+            if (result.status === 'configured') {
+                console.log(`     ${c.green('✓')}  ${result.agent.padEnd(16)} ${c.green('added')}`);
+            }
+            else if (result.status === 'already-configured') {
+                console.log(`     ${c.dim('●')}  ${result.agent.padEnd(16)} ${c.dim('already has Hanzi')}`);
+            }
+            else {
+                console.log(`     ${c.red('✗')}  ${result.agent.padEnd(16)} ${c.red(result.detail)}`);
+            }
         }
     }
-    // ── Step 3: Credentials (skippable) ──
-    await promptCredentials();
+    else {
+        sp2.stop(`  ✓  ${configured > 0 ? `Added to ${configured} agent${configured === 1 ? '' : 's'}` : 'All agents already have Hanzi'}`);
+        log('');
+        for (const result of results) {
+            const status = result.status === 'configured' ? 'added'
+                : result.status === 'already-configured' ? 'already has Hanzi'
+                    : `error: ${result.detail}`;
+            log(`     ${result.status === 'error' ? '✗' : result.status === 'configured' ? '✓' : '●'}  ${result.agent} — ${status}`);
+        }
+    }
+    // ── Step 3: Credentials (skippable, interactive only) ──
+    if (interactive) {
+        await promptCredentials();
+    }
+    else {
+        // Auto-detect and report credentials
+        const sources = detectCredentialSources();
+        if (sources.length > 0) {
+            log('\n  Step 3: Credentials');
+            for (const source of sources) {
+                log(`     ✓  Found ${source.name} credentials (${source.path})`);
+            }
+        }
+    }
     // ── Summary ──
     const errors = results.filter(r => r.status === 'error').length;
-    console.log('');
-    console.log(`  ${c.bold('◆  Setup complete!')}`);
-    console.log('');
-    if (configured > 0) {
-        console.log(`     ${c.green('▸')}  Restart your agents to start using Hanzi.`);
+    if (interactive) {
+        console.log('');
+        console.log(`  ${c.bold('◆  Setup complete!')}`);
+        console.log('');
+        if (configured > 0) {
+            console.log(`     ${c.green('▸')}  Restart your agents to start using Hanzi.`);
+        }
+        console.log(`     ${c.green('▸')}  Change credentials anytime in the Chrome extension or sidepanel settings.`);
+        if (errors > 0) {
+            console.log(`     ${c.red('▸')}  ${errors} agent${errors === 1 ? '' : 's'} failed — check the errors above.`);
+        }
+        console.log('');
     }
-    console.log(`     ${c.green('▸')}  Change credentials anytime in the Chrome extension or sidepanel settings.`);
-    if (errors > 0) {
-        console.log(`     ${c.red('▸')}  ${errors} agent${errors === 1 ? '' : 's'} failed — check the errors above.`);
+    else {
+        log('\n  Setup complete!');
+        if (configured > 0)
+            log(`     Restart your agents to start using Hanzi.`);
+        if (errors > 0)
+            log(`     ${errors} agent(s) failed — check errors above.`);
+        log('');
     }
-    console.log('');
     rl?.close();
     setTimeout(() => process.exit(0), 200);
 }

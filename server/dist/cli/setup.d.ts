@@ -6,4 +6,5 @@
  */
 export declare function runSetup(options?: {
     only?: string;
+    yes?: boolean;
 }): Promise<void>;
