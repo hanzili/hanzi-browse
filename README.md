@@ -73,6 +73,10 @@ Reusable workflows. Open source — [add your own](https://github.com/hanzili/ll
 | `browser_stop` | Stop a task. |
 | `browser_screenshot` | Capture current page as PNG. |
 
+## Community
+
+[Join our Discord](https://discord.gg/hahgu5hcA5)
+
 ## License
 
 [Polyform Noncommercial 1.0.0](LICENSE)
