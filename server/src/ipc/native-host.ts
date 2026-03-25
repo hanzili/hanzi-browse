@@ -100,7 +100,7 @@ export class NativeHostConnection {
     const manifestPath = join(
       homedir(),
       'Library', 'Application Support', 'Google', 'Chrome',
-      'NativeMessagingHosts', 'com.hanzi_in_chrome.oauth_host.json'
+      'NativeMessagingHosts', 'com.hanzi_browse.oauth_host.json'
     );
 
     if (existsSync(manifestPath)) {

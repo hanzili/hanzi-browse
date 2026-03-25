@@ -16,6 +16,11 @@
   --accent-hover: #6DAAAA;
   --user-bubble: #3a3a3a;
   --border: #333;
+  --color-success: #4CAF50;
+  --color-success-bg: rgba(76, 175, 80, 0.15);
+  --color-error: #ff6b6b;
+  --color-error-bg: rgba(255, 100, 100, 0.2);
+  --color-error-bg-hover: rgba(255, 100, 100, 0.3);
 }
 
 /* Light mode */
@@ -31,6 +36,11 @@
     --accent-hover: #3D7A7A;
     --user-bubble: #e8e8e8;
     --border: #ddd;
+    --color-success: #2e7d32;
+    --color-success-bg: rgba(46, 125, 50, 0.12);
+    --color-error: #c62828;
+    --color-error-bg: rgba(198, 40, 40, 0.15);
+    --color-error-bg-hover: rgba(198, 40, 40, 0.25);
     --shadow: rgba(0, 0, 0, 0.1);
     --overlay: rgba(0, 0, 0, 0.3);
   }
@@ -130,6 +140,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .icon-btn:hover {
@@ -461,8 +473,8 @@ body {
 }
 
 .step-icon.success {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .step-icon.pending {
@@ -498,7 +510,7 @@ body {
 
 .step-status {
   font-size: 11px;
-  color: #4CAF50;
+  color: var(--color-success);
   flex-shrink: 0;
 }
 
@@ -612,14 +624,14 @@ body {
 .modal {
   background: var(--bg-secondary);
   border-radius: 12px;
-  width: 480px;
+  width: min(480px, calc(100% - 24px));
   max-height: 85vh;
   overflow-y: auto;
   border: 1px solid var(--border);
 }
 
 .settings-modal {
-  width: 520px;
+  width: min(520px, calc(100% - 24px));
 }
 
 .modal-header {
@@ -821,8 +833,8 @@ body {
 }
 
 .status-badge.connected {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 /* API key input */
@@ -936,8 +948,8 @@ body {
 }
 
 .custom-model-item .delete-btn:hover {
-  background: rgba(255, 100, 100, 0.2);
-  color: #ff6b6b;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 /* Buttons */
@@ -973,12 +985,12 @@ body {
 }
 
 .btn-danger {
-  background: rgba(255, 100, 100, 0.2);
-  color: #ff6b6b;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .btn-danger:hover {
-  background: rgba(255, 100, 100, 0.3);
+  background: var(--color-error-bg-hover);
 }
 
 .btn-sm {
@@ -1185,7 +1197,7 @@ textarea::placeholder {
 
 .stop-btn {
   padding: 8px 16px;
-  background: #ff6b6b;
+  background: var(--color-error);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1199,7 +1211,7 @@ textarea::placeholder {
 }
 
 .stop-btn:hover {
-  background: #ff5252;
+  background: var(--color-error);
 }
 
 .stop-btn svg {
@@ -1252,14 +1264,17 @@ textarea::placeholder {
 }
 
 .example-chip {
-  padding: 6px 12px;
+  padding: 10px 16px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 16px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   font-family: inherit;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .example-chip:hover {
@@ -1268,7 +1283,7 @@ textarea::placeholder {
 }
 
 .message.error {
-  color: #ff6b6b;
+  color: var(--color-error);
   font-size: 14px;
   padding: 8px 0;
 }
@@ -1327,7 +1342,7 @@ textarea::placeholder {
 
 .image-preview-item .remove-image-btn:hover,
 .remove-image-btn:hover {
-  background: #ff6b6b;
+  background: var(--color-error);
   color: white;
 }
 
@@ -1468,8 +1483,8 @@ textarea::placeholder {
 }
 
 .skill-item .skill-actions button.delete-btn:hover {
-  background: rgba(255, 100, 100, 0.2);
-  color: #ff6b6b;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 /* Skill form */
@@ -1574,4 +1589,63 @@ hr {
   border: none;
   border-top: 1px solid var(--border);
   margin: 16px 0;
+}
+
+/* Advanced collapsible sections */
+.advanced-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.advanced-section summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  list-style: none;
+}
+
+.advanced-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-section[open] summary {
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+.btn:focus-visible,
+.icon-btn:focus-visible,
+.model-selector-btn:focus-visible,
+.model-item:focus-visible,
+.tab:focus-visible,
+.example-chip:focus-visible,
+.provider-card:focus-visible,
+.steps-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.send-btn:focus-visible,
+.stop-btn:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

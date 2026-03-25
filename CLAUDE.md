@@ -45,4 +45,4 @@ cd server && npm run build
 - The `--context` flag passes info the agent needs (form data, preferences, tone)
 - The `--url` flag sets the starting page
 - The Chrome extension must be loaded and running
-- Session state is stored in `~/.hanzi-in-chrome/sessions/`
+- Session state is stored in `~/.hanzi-browse/sessions/`

@@ -254,7 +254,249 @@ export function handleRelayMessage(message: any): boolean {
       return true;
     }
   }
+
+  // Handle create_task from sidepanel via relay
+  if (message?.type === "create_task" && message.task && message.browserSessionId) {
+    handleRelayCreateTask(message).catch(err => {
+      log.error("Relay create_task error", undefined, { error: err.message });
+      // Send error back to extension
+      if (relayConnection && message.browserSessionId) {
+        relayConnection.send({
+          type: "task_error",
+          targetSessionId: message.browserSessionId,
+          requestId: message.requestId,
+          error: err.message,
+        } as any);
+      }
+    });
+    return true;
+  }
+
   return false;
+}
+
+/**
+ * Handle a create_task message from the extension sidepanel via relay.
+ * Similar to handleCreateTask but authenticates via browser session instead of API key.
+ */
+async function handleRelayCreateTask(message: any) {
+  const { task, url, context, browserSessionId, requestId } = message;
+
+  // Validate task
+  if (!task || typeof task !== "string" || task.length > MAX_TASK_LEN) {
+    throw new Error("Invalid task");
+  }
+
+  // Look up browser session to find workspace
+  const session = await S.getBrowserSession(browserSessionId);
+  if (!session) throw new Error("Browser session not found");
+
+  // Check if session is connected
+  const connected = isSessionConnectedFn
+    ? isSessionConnectedFn(browserSessionId)
+    : session.status === "connected";
+  if (!connected) {
+    throw new Error("Browser not connected");
+  }
+
+  // Check credits
+  const allowance = await S.checkTaskAllowance(session.workspaceId);
+  if (!allowance.allowed) throw new Error(allowance.reason || "No tasks remaining");
+
+  // Rate limit + concurrency
+  if (!checkRateLimit(session.workspaceId)) {
+    throw new Error(`Rate limit exceeded. Max ${RATE_LIMIT_MAX_TASKS} tasks per minute.`);
+  }
+  const running = countConcurrentTasks(session.workspaceId);
+  if (running >= MAX_CONCURRENT_TASKS) {
+    throw new Error(`Concurrent task limit reached (${MAX_CONCURRENT_TASKS}). Wait for running tasks to complete.`);
+  }
+
+  // Find a real API key UUID for this workspace (DB requires UUID type)
+  const wsKeys = await S.listApiKeys(session.workspaceId);
+  const apiKeyId = wsKeys.length > 0 ? wsKeys[0].id : session.workspaceId;
+
+  const taskRun = await S.createTaskRun({
+    workspaceId: session.workspaceId,
+    apiKeyId,
+    task,
+    url: url || undefined,
+    context: context || undefined,
+    browserSessionId,
+  });
+
+  const abort = new AbortController();
+  taskAborts.set(taskRun.id, abort);
+  taskWorkspaceMap.set(taskRun.id, { workspaceId: session.workspaceId, startedAt: Date.now() });
+
+  // Task-level timeout
+  const taskTimeout = setTimeout(() => {
+    abort.abort();
+    log.error("Relay task timed out", { requestId, taskId: taskRun.id, workspaceId: session.workspaceId }, { timeoutMinutes: TASK_TIMEOUT_MS / 60000 });
+  }, TASK_TIMEOUT_MS);
+
+  // Send task_started to extension
+  if (relayConnection) {
+    relayConnection.send({
+      type: "task_started",
+      targetSessionId: browserSessionId,
+      requestId,
+      taskId: taskRun.id,
+    } as any);
+  }
+
+  // Track current step for screenshot association
+  let currentStep = 0;
+
+  // Run agent loop in background
+  runAgentLoop({
+    task,
+    url: url || undefined,
+    context: context || undefined,
+    executeTool: async (toolName: string, toolInput: Record<string, any>) => {
+      const startMs = Date.now();
+      const result = await executeToolViaRelay(toolName, toolInput, browserSessionId);
+      // Save screenshot from tool result (best-effort)
+      if (result.screenshot?.data) {
+        S.insertTaskStep({
+          taskRunId: taskRun.id,
+          step: currentStep,
+          status: "screenshot",
+          toolName,
+          screenshot: result.screenshot.data,
+          durationMs: Date.now() - startMs,
+        }).catch(() => {});
+      }
+      return result;
+    },
+    onStep: (step) => {
+      currentStep = step.step;
+      S.updateTaskRun(taskRun.id, { steps: step.step });
+      // Persist step details for observability
+      S.insertTaskStep({
+        taskRunId: taskRun.id,
+        step: step.step,
+        status: step.status,
+        toolName: step.toolName,
+        toolInput: step.toolInput,
+        output: step.text,
+      }).catch(() => {});
+      // Send step update to extension via relay
+      if (relayConnection) {
+        relayConnection.send({
+          type: "task_update",
+          targetSessionId: browserSessionId,
+          requestId,
+          taskId: taskRun.id,
+          step: { tool: step.toolName, input: step.toolInput, status: step.status },
+          steps: step.step,
+        } as any);
+      }
+    },
+    maxSteps: 50,
+    signal: abort.signal,
+  })
+    .then(async (result: AgentLoopResult) => {
+      const status = result.status === "complete" ? "complete" : "error";
+      // Deduct credit ONLY for completed tasks
+      if (status === "complete") {
+        try {
+          const source = await S.deductTaskCredit(session.workspaceId);
+          log.info("Relay task credit deducted", { taskId: taskRun.id, workspaceId: session.workspaceId }, { source });
+        } catch (err: any) {
+          log.warn("Relay task credit deduction failed", { taskId: taskRun.id }, { error: err.message });
+        }
+      }
+      // Record usage
+      try {
+        await S.recordUsage({
+          workspaceId: session.workspaceId,
+          apiKeyId,
+          taskRunId: taskRun.id,
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+          apiCalls: result.usage.apiCalls,
+          model: result.model || "gemini-2.5-flash",
+        });
+      } catch (usageErr: any) {
+        log.warn("Relay task usage recording failed", { taskId: taskRun.id, workspaceId: session.workspaceId }, { error: usageErr.message });
+      }
+      // Report to Stripe if billing is enabled
+      if (isBillingEnabled()) {
+        await recordTaskUsage({
+          workspaceId: session.workspaceId,
+          taskId: taskRun.id,
+          steps: result.steps,
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+        }).catch((err: any) => log.warn("Stripe usage metering failed (relay)", { taskId: taskRun.id }, { error: err.message }));
+      }
+      // Update task status with retry
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          await S.updateTaskRun(taskRun.id, {
+            status,
+            answer: result.answer,
+            steps: result.steps,
+            usage: result.usage,
+            completedAt: Date.now(),
+          });
+          break;
+        } catch (updateErr: any) {
+          if (attempt === 0) {
+            log.warn("Relay task status update failed, retrying", { taskId: taskRun.id }, { error: updateErr.message });
+            await new Promise(r => setTimeout(r, 1000));
+          } else {
+            log.error("Relay task status update FAILED permanently", { taskId: taskRun.id }, { error: updateErr.message });
+          }
+        }
+      }
+      // Send completion to extension
+      if (relayConnection) {
+        relayConnection.send({
+          type: "task_complete",
+          targetSessionId: browserSessionId,
+          requestId,
+          taskId: taskRun.id,
+          answer: result.answer,
+        } as any);
+      }
+      log.info("Relay task completed", { requestId, taskId: taskRun.id, workspaceId: session.workspaceId }, { status, steps: result.steps });
+    })
+    .catch(async (err: any) => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          await S.updateTaskRun(taskRun.id, {
+            status: "error",
+            answer: `Agent loop crashed: ${err.message}`,
+            completedAt: Date.now(),
+          });
+          break;
+        } catch (updateErr: any) {
+          if (attempt === 0) {
+            await new Promise(r => setTimeout(r, 1000));
+          } else {
+            log.error("Relay task error status update FAILED permanently", { taskId: taskRun.id }, { error: updateErr.message });
+          }
+        }
+      }
+      // Send error to extension
+      if (relayConnection) {
+        relayConnection.send({
+          type: "task_error",
+          targetSessionId: browserSessionId,
+          requestId,
+          taskId: taskRun.id,
+          error: err.message,
+        } as any);
+      }
+      log.error("Relay task crashed", { requestId, taskId: taskRun.id, workspaceId: session.workspaceId }, { error: err.message });
+    })
+    .finally(() => {
+      clearTimeout(taskTimeout);
+      taskAborts.delete(taskRun.id);
+      taskWorkspaceMap.delete(taskRun.id);
+    });
 }
 
 /**
@@ -322,14 +564,16 @@ async function authenticate(req: IncomingMessage): Promise<ApiKey | null> {
   // Try Better Auth session cookie (first-party app path)
   const sessionInfo = await resolveSessionToWorkspace(req);
   if (sessionInfo) {
-    // Return a synthetic ApiKey-like object for the session user
+    // Find an actual API key for this workspace (needed for UUID columns)
+    const wsKeys = await S.listApiKeys(sessionInfo.workspaceId);
+    const keyId = wsKeys.length > 0 ? wsKeys[0].id : sessionInfo.workspaceId;
     return {
-      id: sessionInfo.userId,
+      id: keyId,
       key: "",
       name: "session",
       workspaceId: sessionInfo.workspaceId,
       createdAt: Date.now(),
-    };
+    } as any;
   }
 
   return null;
@@ -720,14 +964,15 @@ async function handleRequest(
           ".css": "text/css", ".json": "application/json",
           ".svg": "image/svg+xml", ".png": "image/png",
         };
-        res.writeHead(200, { "Content-Type": mimeTypes[ext] || "application/octet-stream" });
+        const cacheControl = ext === ".html" ? "no-cache, no-store, must-revalidate" : "public, max-age=31536000, immutable";
+        res.writeHead(200, { "Content-Type": mimeTypes[ext] || "application/octet-stream", "Cache-Control": cacheControl });
         res.end(readFileSync(filePath));
         return;
       }
       // SPA fallback — serve index.html for unmatched dashboard routes
       const indexPath = join(dashboardDir, "index.html");
       if (existsSync(indexPath)) {
-        res.writeHead(200, { "Content-Type": "text/html" });
+        res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate" });
         res.end(readFileSync(indexPath));
         return;
       }
@@ -774,6 +1019,30 @@ async function handleRequest(
       return;
     }
 
+    // --- Self-service pairing for direct sidepanel users (/pair-self) ---
+    // One-click: sign in → auto-create workspace → auto-pair extension
+    if (method === "GET" && url === "/pair-self") {
+      const session = await resolveSessionToWorkspace(req);
+      if (!session) {
+        // Not signed in — redirect to Google OAuth, come back after
+        res.writeHead(302, { Location: "/api/auth/sign-in/social?provider=google&callbackURL=/pair-self" });
+        res.end();
+        return;
+      }
+      // User is signed in — auto-create a pairing token for their workspace
+      try {
+        const wsKeys = await S.listApiKeys(session.workspaceId);
+        const createdBy = wsKeys.length > 0 ? wsKeys[0].id : session.workspaceId;
+        const token = await S.createPairingToken(session.workspaceId, createdBy, { label: "Sidepanel" });
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end(getSelfPairPageHtml(token._plainToken, req.headers.host || ""));
+      } catch (err: any) {
+        res.writeHead(500, { "Content-Type": "text/html" });
+        res.end(`<html><body><p>Error: ${err.message}</p><a href="/pair-self">Try again</a></body></html>`);
+      }
+      return;
+    }
+
     // --- Hosted pairing page (/pair/:token) ---
     const pairMatch = url?.match(/^\/pair\/(.+)$/);
     if (method === "GET" && pairMatch) {
@@ -808,11 +1077,23 @@ async function handleRequest(
       return;
     }
 
+    // Debug: show cookies received
+    if (method === "GET" && url === "/v1/debug-cookies") {
+      const cookies = req.headers.cookie || '(none)';
+      const cookieNames = cookies === '(none)' ? [] : cookies.split(';').map((c: string) => c.trim().split('=')[0]);
+      sendJson(req, res, 200, { cookieNames, rawCookieHeader: cookies.substring(0, 200) });
+      return;
+    }
+
     // Profile endpoint (session cookie auth — for developer console)
     if (method === "GET" && url === "/v1/me") {
-      const profile = await resolveSessionProfile(req);
+      let profile = await resolveSessionProfile(req);
       if (!profile) {
-        sendJson(req, res, 401, { error: "Not signed in" });
+        // Debug: try reading session directly from cookie + DB
+        const cookieHeader = req.headers.cookie || '';
+        const tokenMatch = cookieHeader.match(/better-auth[.\-]session_token=([^;.\s]+)/);
+        const rawToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
+        sendJson(req, res, 401, { error: "Not signed in", debug: { rawToken: rawToken?.substring(0, 10), cookieHeader: cookieHeader.substring(0, 100) } });
         return;
       }
       sendJson(req, res, 200, {
@@ -1140,11 +1421,86 @@ export async function shutdownManagedAPI(): Promise<void> {
   log.info("Shutdown complete", undefined, { tasksAborted: runningCount });
 }
 
-// ─── Hosted Pairing Page ─────────────────────────────────
+// ─── Self-Service Pairing Page (for direct sidepanel users) ─────
+
+function getSelfPairPageHtml(token: string, host: string): string {
+  const apiUrl = host.includes("localhost") ? `http://${host}` : `https://${host}`;
+  const safeToken = token.replace(/[<>"'&]/g, "");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connecting — Hanzi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f7f3ea; color: #1f1711; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; }
+    .card { max-width: 420px; width: 100%; background: #fffdf8; border: 1px solid #e5ddd0; border-radius: 16px; padding: 32px; text-align: center; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    p { font-size: 15px; color: #6d6256; line-height: 1.6; margin-bottom: 20px; }
+    .status { padding: 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; font-weight: 500; }
+    .status-connecting { background: #fceee4; color: #8d4524; }
+    .status-success { background: #e8f0ec; color: #2f4a3d; }
+    .status-error { background: #fce4e4; color: #c62828; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e5ddd0; border-top-color: #ad5a34; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .small { font-size: 12px; color: #6d6256; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Connecting your browser</h1>
+    <p>This will connect Hanzi to your account so you can browse with managed AI.</p>
+    <div id="status" class="status status-connecting">
+      <span class="spinner"></span> Connecting to extension...
+    </div>
+    <p class="small">You can close this tab after connecting.</p>
+  </div>
+  <script>
+    const TOKEN = "${safeToken}";
+    const API_URL = "${apiUrl}";
+    const statusEl = document.getElementById("status");
+    let paired = false;
+
+    window.addEventListener("message", (e) => {
+      if (e.data?.type === "HANZI_EXTENSION_READY" && !paired) {
+        pair();
+      }
+      if (e.data?.type === "HANZI_PAIR_RESULT") {
+        paired = true;
+        if (e.data.success) {
+          statusEl.className = "status status-success";
+          statusEl.innerHTML = "✓ Connected! You can close this tab and use the sidepanel.";
+        } else {
+          statusEl.className = "status status-error";
+          statusEl.innerHTML = "Failed: " + (e.data.error || "unknown error");
+        }
+      }
+    });
+
+    function pair() {
+      statusEl.innerHTML = '<span class="spinner"></span> Pairing...';
+      window.postMessage({ type: "HANZI_PAIR", token: TOKEN, apiUrl: API_URL }, "*");
+    }
+
+    window.postMessage({ type: "HANZI_PING" }, "*");
+    setTimeout(() => {
+      if (!paired) {
+        statusEl.className = "status status-error";
+        statusEl.innerHTML = 'Hanzi extension not detected. <a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank" style="color:#ad5a34;font-weight:600">Install it</a>, then reload this page.';
+      }
+    }, 3000);
+  </script>
+</body>
+</html>`;
+}
+
+// ─── Hosted Pairing Page (for developer integration) ─────
 
 function getPairingPageHtml(token: string, host: string): string {
   const apiUrl = host.includes("localhost") ? `http://${host}` : `https://${host}`;
-  const extensionUrl = "https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd";
+  const extensionUrl = "https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd";
   // Escape token for safe embedding in HTML
   const safeToken = token.replace(/[<>"'&]/g, "");
 

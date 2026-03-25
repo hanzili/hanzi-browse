@@ -155,13 +155,13 @@ function OnboardingApp() {
     /* @__PURE__ */ u("div", { class: "connect-sections", children: [
       !isReady && /* @__PURE__ */ u("div", { class: "connect-section", children: [
         /* @__PURE__ */ u("div", { class: "command-block", style: { margin: "0" }, children: [
-          /* @__PURE__ */ u("code", { children: "npx hanzi-in-chrome setup" }),
+          /* @__PURE__ */ u("code", { children: "npx hanzi-browse setup" }),
           /* @__PURE__ */ u(
             "button",
             {
               class: "copy-btn",
               onClick: () => {
-                navigator.clipboard.writeText("npx hanzi-in-chrome setup");
+                navigator.clipboard.writeText("npx hanzi-browse setup");
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2e3);
               },

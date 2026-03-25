@@ -458,7 +458,7 @@ async function callLLMSimpleViaProxy(apiUrl, requestBody) {
 function getNativeHostPort() {
   if (!nativeHostPort || !nativeHostPort.name) {
     console.log('[API] Creating new native host connection for OAuth proxy');
-    nativeHostPort = chrome.runtime.connectNative('com.hanzi_in_chrome.oauth_host');
+    nativeHostPort = chrome.runtime.connectNative('com.hanzi_browse.oauth_host');
 
     // Listen for token refresh events
     nativeHostPort.onMessage.addListener(async (message) => {

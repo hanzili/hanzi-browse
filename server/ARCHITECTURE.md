@@ -28,15 +28,15 @@ Chrome extension bridge (`src/background/modules/mcp-bridge.js`)
 
 The extension path is the source of truth for browser execution:
 
-- Task start: [src/background/service-worker.js](/Users/apple/Dev/llm-in-chrome/src/background/service-worker.js#L1190)
-- Follow-up messages: [src/background/service-worker.js](/Users/apple/Dev/llm-in-chrome/src/background/service-worker.js#L1431)
-- Screenshot handling: [src/background/service-worker.js](/Users/apple/Dev/llm-in-chrome/src/background/service-worker.js#L1621)
-- Main browser loop: [src/background/service-worker.js](/Users/apple/Dev/llm-in-chrome/src/background/service-worker.js#L498)
+- Task start: [src/background/service-worker.js](/Users/apple/Dev/hanzi-browse/src/background/service-worker.js#L1190)
+- Follow-up messages: [src/background/service-worker.js](/Users/apple/Dev/hanzi-browse/src/background/service-worker.js#L1431)
+- Screenshot handling: [src/background/service-worker.js](/Users/apple/Dev/hanzi-browse/src/background/service-worker.js#L1621)
+- Main browser loop: [src/background/service-worker.js](/Users/apple/Dev/hanzi-browse/src/background/service-worker.js#L498)
 
 The MCP server entrypoint forwards to that path:
 
-- MCP tools: [server/src/index.ts](/Users/apple/Dev/llm-in-chrome/server/src/index.ts)
-- Relay client: [server/src/ipc/websocket-client.ts](/Users/apple/Dev/llm-in-chrome/server/src/ipc/websocket-client.ts)
+- MCP tools: [server/src/index.ts](/Users/apple/Dev/hanzi-browse/server/src/index.ts)
+- Relay client: [server/src/ipc/websocket-client.ts](/Users/apple/Dev/hanzi-browse/server/src/ipc/websocket-client.ts)
 
 ## Components
 
@@ -68,7 +68,7 @@ Current implementation notes:
 - tagged task traffic can now be routed back to the originating MCP/CLI client
 - untagged extension messages still broadcast to all consumers
 
-See: [server/src/relay/server.ts](/Users/apple/Dev/llm-in-chrome/server/src/relay/server.ts)
+See: [server/src/relay/server.ts](/Users/apple/Dev/hanzi-browse/server/src/relay/server.ts)
 
 ### Extension bridge
 
@@ -78,7 +78,7 @@ Responsibilities:
 - forward task results, screenshots, and status updates back over the relay
 - preserve session ownership across MCP follow-up, stop, and screenshot commands
 
-See: [src/background/modules/mcp-bridge.js](/Users/apple/Dev/llm-in-chrome/src/background/modules/mcp-bridge.js)
+See: [src/background/modules/mcp-bridge.js](/Users/apple/Dev/hanzi-browse/src/background/modules/mcp-bridge.js)
 
 ### Extension service worker
 
@@ -89,15 +89,15 @@ Responsibilities:
 - run the real browser agent
 - manage follow-up messages, task cancellation, screenshots, and cleanup
 
-See: [src/background/service-worker.js](/Users/apple/Dev/llm-in-chrome/src/background/service-worker.js)
+See: [src/background/service-worker.js](/Users/apple/Dev/hanzi-browse/src/background/service-worker.js)
 
 ## Legacy / Cleanup Targets
 
 These files represent legacy or partially migrated architecture and should not
 be treated as the target design:
 
-- utility/legacy references to native-host transport in [server/src/ipc/native-host.ts](/Users/apple/Dev/llm-in-chrome/server/src/ipc/native-host.ts)
-- utility/legacy references to native-host transport in [server/src/ipc/index.ts](/Users/apple/Dev/llm-in-chrome/server/src/ipc/index.ts)
+- utility/legacy references to native-host transport in [server/src/ipc/native-host.ts](/Users/apple/Dev/hanzi-browse/server/src/ipc/native-host.ts)
+- utility/legacy references to native-host transport in [server/src/ipc/index.ts](/Users/apple/Dev/hanzi-browse/server/src/ipc/index.ts)
 
 ## Known Gaps
 
@@ -110,5 +110,5 @@ The main architectural duplication is gone, but a few gaps still remain:
   - popup-heavy / OAuth / multi-tab flows
   - long-idle TTL cleanup
 
-See [PRODUCTION_READINESS.md](/Users/apple/Dev/llm-in-chrome/docs/internal/PRODUCTION_READINESS.md)
+See [PRODUCTION_READINESS.md](/Users/apple/Dev/hanzi-browse/docs/internal/PRODUCTION_READINESS.md)
 for the current readiness assessment.

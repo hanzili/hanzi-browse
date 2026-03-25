@@ -176,8 +176,8 @@ async function cmdStart() {
     });
     if (!jsonOutput) {
         console.log(`\n[CLI] Session: ${sessionId}`);
-        console.log(`  Status: ~/.hanzi-in-chrome/sessions/${sessionId}.json`);
-        console.log(`  Logs:   ~/.hanzi-in-chrome/sessions/${sessionId}.log`);
+        console.log(`  Status: ~/.hanzi-browse/sessions/${sessionId}.json`);
+        console.log(`  Logs:   ~/.hanzi-browse/sessions/${sessionId}.log`);
         console.log(`  Skills: run \`hanzi-browser skills\` for optimized workflows (e.g. LinkedIn prospecting)`);
         console.log('\nWaiting for completion...\n');
     }
@@ -300,7 +300,7 @@ async function cmdScreenshot() {
     disconnectAndExit(0);
 }
 // --- Skills ---
-const SKILLS_BASE_URL = 'https://raw.githubusercontent.com/hanzili/llm-in-chrome/main/server/skills';
+const SKILLS_BASE_URL = 'https://raw.githubusercontent.com/hanzili/hanzi-browse/main/server/skills';
 const SKILL_REGISTRY = [
     {
         name: 'linkedin-prospector',

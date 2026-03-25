@@ -13,7 +13,7 @@
 
 import * as toolHandlerModule from '../tool-handlers/index.js';
 
-const NATIVE_HOST_NAME = 'com.hanzi_in_chrome.oauth_host';
+const NATIVE_HOST_NAME = 'com.hanzi_browse.oauth_host';
 const WS_RELAY_URL_LOCAL = 'ws://localhost:7862';
 
 // Managed relay URL — derived from the managed backend URL stored during pairing
@@ -606,6 +606,40 @@ async function handleMcpCommand(command) {
       handleLLMRequest(command);
       break;
 
+    // Handle managed task responses (from managed backend via relay)
+    case 'task_started':
+      chrome.runtime.sendMessage({
+        type: 'TASK_UPDATE',
+        update: { status: 'running', message: 'Task started on managed service...' },
+      }).catch(() => {});
+      break;
+
+    case 'task_update':
+      chrome.runtime.sendMessage({
+        type: 'TASK_UPDATE',
+        update: {
+          status: 'tool_use',
+          tool: command.step?.tool || 'working',
+          input: command.step?.input || {},
+          steps: command.steps,
+        },
+      }).catch(() => {});
+      break;
+
+    case 'task_complete':
+      chrome.runtime.sendMessage({
+        type: 'TASK_COMPLETE',
+        result: command.answer || 'Done',
+      }).catch(() => {});
+      break;
+
+    case 'task_error':
+      chrome.runtime.sendMessage({
+        type: 'TASK_ERROR',
+        error: command.error || 'Task failed',
+      }).catch(() => {});
+      break;
+
     case 'execute_tool': {
       // Managed backend requesting tool execution (server-driven agent loop)
       // Tool execution targets the session-owned tab, NOT the global active tab.
@@ -986,7 +1020,7 @@ export function getMcpSession(sessionId) {
  * Send message to MCP server/CLI over the WebSocket relay.
  * MCP task transport requires relay connectivity.
  */
-function sendToMcpRelay(message) {
+export function sendToMcpRelay(message) {
   if (!relaySocket || relaySocket.readyState !== WebSocket.OPEN) {
     return false;
   }

@@ -14,6 +14,10 @@
   --accent: #5D9A9A;
   --accent-hover: #6DAAAA;
   --border: #333;
+  --color-success: #4CAF50;
+  --color-success-bg: rgba(76, 175, 80, 0.15);
+  --color-error: #ff6b6b;
+  --color-error-bg: rgba(255, 100, 100, 0.2);
 }
 
 @media (prefers-color-scheme: light) {
@@ -27,6 +31,10 @@
     --accent: #4D8A8A;
     --accent-hover: #3D7A7A;
     --border: #ddd;
+    --color-success: #2e7d32;
+    --color-success-bg: rgba(46, 125, 50, 0.12);
+    --color-error: #c62828;
+    --color-error-bg: rgba(198, 40, 40, 0.15);
   }
 }
 
@@ -281,8 +289,8 @@ body {
 }
 
 .quick-connect-card.connected {
-  border-color: #4CAF50;
-  background: rgba(76, 175, 80, 0.05);
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .quick-connect-card.selected {
@@ -347,8 +355,8 @@ body {
 }
 
 .connect-option.connected {
-  border-color: #4CAF50;
-  background: rgba(76, 175, 80, 0.05);
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .connect-option-header {
@@ -370,8 +378,8 @@ body {
 .check-mark {
   font-size: 12px;
   padding: 2px 8px;
-  background: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
+  background: var(--color-success-bg);
+  color: var(--color-success);
   border-radius: 10px;
 }
 
@@ -408,7 +416,7 @@ body {
 }
 
 .api-provider-btn.connected {
-  border-color: #4CAF50;
+  border-color: var(--color-success);
 }
 
 .api-provider-btn:disabled {
@@ -448,10 +456,10 @@ body {
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-bg);
   border-radius: 10px;
-  color: #4CAF50;
+  color: var(--color-success);
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 24px;
@@ -459,10 +467,10 @@ body {
 
 .error-banner {
   padding: 14px 16px;
-  background: rgba(255, 100, 100, 0.1);
-  border: 1px solid rgba(255, 100, 100, 0.3);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-bg);
   border-radius: 10px;
-  color: #ff6b6b;
+  color: var(--color-error);
   font-size: 14px;
   margin-bottom: 24px;
 }
@@ -473,7 +481,7 @@ body {
   width: 48px;
   height: 48px;
   margin: 0 auto 20px;
-  color: #4CAF50;
+  color: var(--color-success);
 }
 
 .success-icon svg {
@@ -782,8 +790,8 @@ body {
 }
 
 .status-dot.ok {
-  color: #4CAF50;
-  background: rgba(76, 175, 80, 0.12);
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .status-dot.pending {
@@ -807,5 +815,31 @@ body {
   .api-provider-grid,
   .quick-connect-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+.btn:focus-visible,
+.quick-connect-card:focus-visible,
+.connect-option:focus-visible,
+.api-provider-btn:focus-visible,
+.copy-btn:focus-visible,
+.back-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

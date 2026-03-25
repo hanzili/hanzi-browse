@@ -510,32 +510,57 @@ function Header({
     onModelSelect(index);
     setIsDropdownOpen(false);
   };
+  const handleKeyDown = (e) => {
+    if (!isDropdownOpen) return;
+    if (e.key === "Escape") {
+      setIsDropdownOpen(false);
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const direction = e.key === "ArrowDown" ? 1 : -1;
+      const newIndex = Math.max(0, Math.min(availableModels.length - 1, currentModelIndex + direction));
+      onModelSelect(newIndex);
+    }
+    if (e.key === "Enter" && isDropdownOpen) {
+      setIsDropdownOpen(false);
+    }
+  };
   return /* @__PURE__ */ u("div", { class: "header", children: [
     /* @__PURE__ */ u("div", { class: "header-left", children: /* @__PURE__ */ u("div", { class: "model-selector", ref: dropdownRef, children: [
       /* @__PURE__ */ u(
         "button",
         {
           class: "model-selector-btn",
-          onClick: () => setIsDropdownOpen(!isDropdownOpen),
+          onClick: () => availableModels.length > 0 && setIsDropdownOpen(!isDropdownOpen),
+          onKeyDown: handleKeyDown,
+          "aria-expanded": isDropdownOpen,
+          "aria-haspopup": availableModels.length > 0 ? "listbox" : void 0,
+          "aria-label": `Model: ${(currentModel == null ? void 0 : currentModel.name) || "Select Model"}${availableModels.length > 0 ? ". Click to change." : ""}`,
+          style: availableModels.length === 0 ? { cursor: "default" } : void 0,
           children: [
             /* @__PURE__ */ u("span", { class: "current-model-name", children: (currentModel == null ? void 0 : currentModel.name) || "Select Model" }),
-            /* @__PURE__ */ u("svg", { class: "chevron", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: /* @__PURE__ */ u("path", { d: "M6 9l6 6 6-6" }) })
+            availableModels.length > 0 && /* @__PURE__ */ u("svg", { class: "chevron", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: /* @__PURE__ */ u("path", { d: "M6 9l6 6 6-6" }) })
           ]
         }
       ),
-      isDropdownOpen && /* @__PURE__ */ u("div", { class: "model-dropdown", children: /* @__PURE__ */ u("div", { class: "model-list", children: availableModels.length === 0 ? /* @__PURE__ */ u("div", { class: "model-item disabled", children: "No models configured" }) : availableModels.map((model, index) => /* @__PURE__ */ u(
+      isDropdownOpen && /* @__PURE__ */ u("div", { class: "model-dropdown", role: "listbox", "aria-label": "Select model", children: /* @__PURE__ */ u("div", { class: "model-list", role: "presentation", children: availableModels.length === 0 ? /* @__PURE__ */ u("div", { class: "model-item disabled", children: "No models configured" }) : availableModels.map((model, index) => /* @__PURE__ */ u(
         "button",
         {
           class: `model-item ${index === currentModelIndex ? "active" : ""}`,
           onClick: () => handleModelSelect(index),
+          role: "option",
+          "aria-selected": index === currentModelIndex,
           children: model.name
         },
         index
       )) }) })
     ] }) }),
     /* @__PURE__ */ u("div", { class: "header-right", children: [
-      /* @__PURE__ */ u("button", { class: "icon-btn", onClick: onNewChat, title: "New chat", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: /* @__PURE__ */ u("path", { d: "M12 5v14M5 12h14" }) }) }),
-      /* @__PURE__ */ u("button", { class: "icon-btn", onClick: onOpenSettings, title: "Settings", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: [
+      /* @__PURE__ */ u("button", { class: "icon-btn", onClick: () => {
+        if (!document.querySelector(".messages .message") || confirm("Clear current chat?")) onNewChat();
+      }, title: "New chat", "aria-label": "New chat", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: /* @__PURE__ */ u("path", { d: "M12 5v14M5 12h14" }) }) }),
+      /* @__PURE__ */ u("button", { class: "icon-btn", onClick: onOpenSettings, title: "Settings", "aria-label": "Settings", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: [
         /* @__PURE__ */ u("circle", { cx: "12", cy: "12", r: "3" }),
         /* @__PURE__ */ u("path", { d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" })
       ] }) })
@@ -687,7 +712,7 @@ function Message({ message }) {
     ] }) });
   }
   if (type === "streaming") {
-    return /* @__PURE__ */ u("div", { class: "message assistant streaming", children: [
+    return /* @__PURE__ */ u("div", { class: "message assistant streaming", "aria-live": "polite", "aria-atomic": "false", children: [
       /* @__PURE__ */ u("div", { class: "bullet" }),
       /* @__PURE__ */ u(
         "div",
@@ -725,15 +750,21 @@ function Message({ message }) {
   return null;
 }
 function StepsSection({ steps, pendingStep }) {
-  const [isExpanded, setIsExpanded] = d(false);
+  const [isExpanded, setIsExpanded] = d(!!pendingStep);
+  y(() => {
+    if (pendingStep) setIsExpanded(true);
+  }, [pendingStep]);
   const totalSteps = steps.length + (pendingStep ? 1 : 0);
   if (totalSteps === 0) return null;
   return /* @__PURE__ */ u("div", { class: "steps-section", children: [
     /* @__PURE__ */ u(
-      "div",
+      "button",
       {
         class: `steps-toggle ${isExpanded ? "expanded" : ""}`,
         onClick: () => setIsExpanded(!isExpanded),
+        "aria-expanded": isExpanded,
+        "aria-label": `${steps.length} steps completed${pendingStep ? ", 1 in progress" : ""}. Click to ${isExpanded ? "collapse" : "expand"}.`,
+        type: "button",
         children: [
           /* @__PURE__ */ u("div", { class: "toggle-icon", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", children: [
             /* @__PURE__ */ u("polyline", { points: "9 11 12 14 22 4" }),
@@ -864,8 +895,11 @@ function InputArea({
   };
   const handleInput = (e) => {
     setText(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = Math.min(e.target.scrollHeight, 150) + "px";
+    const target = e.target;
+    requestAnimationFrame(() => {
+      target.style.height = "auto";
+      target.style.height = Math.min(target.scrollHeight, 150) + "px";
+    });
   };
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -936,7 +970,8 @@ function InputArea({
               onInput: handleInput,
               onKeyDown: handleKeyDown,
               onPaste: handlePaste,
-              rows: 1
+              rows: 1,
+              "aria-label": "Task description"
             }
           ),
           isRunning ? /* @__PURE__ */ u("button", { class: "btn stop-btn", onClick: onStop, children: [
@@ -959,21 +994,78 @@ function InputArea({
     }
   );
 }
+function useFocusTrap(active = true) {
+  const containerRef = A(null);
+  y(() => {
+    if (!active || !containerRef.current) return;
+    const container = containerRef.current;
+    const previouslyFocused = document.activeElement;
+    const getFocusable = () => {
+      return container.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+    };
+    const focusable = getFocusable();
+    if (focusable.length > 0) {
+      focusable[0].focus();
+    }
+    const handleKeyDown = (e) => {
+      if (e.key !== "Tab") return;
+      const elements = getFocusable();
+      if (elements.length === 0) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    container.addEventListener("keydown", handleKeyDown);
+    return () => {
+      container.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused && previouslyFocused.focus) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [active]);
+  return containerRef;
+}
 function SettingsModal({ config, onClose }) {
   const [activeTab, setActiveTab] = d("providers");
   const [selectedProvider, setSelectedProvider] = d(null);
   const [localKeys, setLocalKeys] = d({ ...config.providerKeys });
-  const [agentDefaultIndex, setAgentDefaultIndex] = d(config.currentAgentDefaultIndex);
   const [newCustomModel, setNewCustomModel] = d({ name: "", baseUrl: "", modelId: "", apiKey: "" });
   const [skillForm, setSkillForm] = d({ domain: "", skill: "", isOpen: false, editIndex: -1 });
+  const [formError, setFormError] = d("");
   const [managedStatus, setManagedStatus] = d(null);
+  const trapRef = useFocusTrap(true);
   y(() => {
-    setAgentDefaultIndex(config.currentAgentDefaultIndex);
-  }, [config.currentAgentDefaultIndex]);
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
   y(() => {
     chrome.runtime.sendMessage({ type: "GET_MANAGED_STATUS" }, (res) => {
       if (res) setManagedStatus(res);
     });
+    const listener = (changes) => {
+      if (changes.managed_session_token) {
+        chrome.runtime.sendMessage({ type: "GET_MANAGED_STATUS" }, (res) => {
+          if (res) setManagedStatus(res);
+        });
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
   const handleSave = async () => {
     for (const [provider, key] of Object.entries(localKeys)) {
@@ -982,24 +1074,23 @@ function SettingsModal({ config, onClose }) {
       }
     }
     await config.saveConfig();
-    if (agentDefaultIndex !== config.currentAgentDefaultIndex && agentDefaultIndex >= 0) {
-      await config.selectAgentDefault(agentDefaultIndex);
-    }
     onClose();
   };
   const handleAddCustomModel = () => {
     if (!newCustomModel.name || !newCustomModel.baseUrl || !newCustomModel.modelId) {
-      alert("Please fill in name, base URL, and model ID");
+      setFormError("Please fill in name, base URL, and model ID");
       return;
     }
+    setFormError("");
     config.addCustomModel({ ...newCustomModel });
     setNewCustomModel({ name: "", baseUrl: "", modelId: "", apiKey: "" });
   };
   const handleAddSkill = () => {
     if (!skillForm.domain || !skillForm.skill) {
-      alert("Please fill in both domain and tips/guidance");
+      setFormError("Please fill in both domain and tips/guidance");
       return;
     }
+    setFormError("");
     config.addUserSkill({ domain: skillForm.domain.toLowerCase(), skill: skillForm.skill });
     setSkillForm({ domain: "", skill: "", isOpen: false, editIndex: -1 });
   };
@@ -1007,10 +1098,33 @@ function SettingsModal({ config, onClose }) {
     const skill = config.userSkills[index];
     setSkillForm({ domain: skill.domain, skill: skill.skill, isOpen: true, editIndex: index });
   };
-  return /* @__PURE__ */ u("div", { class: "modal-overlay", onClick: (e) => e.target === e.currentTarget && onClose(), children: /* @__PURE__ */ u("div", { class: "modal settings-modal", children: [
+  const isPaired = managedStatus == null ? void 0 : managedStatus.isManaged;
+  if (isPaired) {
+    const handleDisconnect = () => {
+      chrome.runtime.sendMessage({ type: "MANAGED_DISCONNECT" }, () => {
+        setManagedStatus({ isManaged: false, browserSessionId: null });
+      });
+    };
+    return /* @__PURE__ */ u("div", { class: "modal-overlay", onClick: (e) => e.target === e.currentTarget && onClose(), children: /* @__PURE__ */ u("div", { class: "modal settings-modal", role: "dialog", "aria-modal": "true", "aria-label": "Settings", ref: trapRef, children: [
+      /* @__PURE__ */ u("div", { class: "modal-header", children: [
+        /* @__PURE__ */ u("span", { children: "Settings" }),
+        /* @__PURE__ */ u("button", { class: "close-btn", onClick: onClose, "aria-label": "Close settings", children: "×" })
+      ] }),
+      /* @__PURE__ */ u("div", { class: "modal-body", children: /* @__PURE__ */ u("div", { class: "provider-section", children: [
+        /* @__PURE__ */ u("div", { class: "connected-status", children: [
+          /* @__PURE__ */ u("span", { class: "status-badge connected", children: "Connected" }),
+          /* @__PURE__ */ u("span", { style: { fontSize: "14px", marginLeft: "8px" }, children: "Hanzi Managed" })
+        ] }),
+        /* @__PURE__ */ u("p", { class: "provider-desc", style: { marginTop: "12px" }, children: "Your browser is connected to Hanzi's managed AI service. Tasks you run in the sidepanel use your managed account." }),
+        /* @__PURE__ */ u("button", { class: "btn btn-secondary btn-sm", onClick: handleDisconnect, style: { marginTop: "8px" }, children: "Disconnect" })
+      ] }) }),
+      /* @__PURE__ */ u("div", { class: "modal-footer", children: /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: onClose, children: "Done" }) })
+    ] }) });
+  }
+  return /* @__PURE__ */ u("div", { class: "modal-overlay", onClick: (e) => e.target === e.currentTarget && onClose(), children: /* @__PURE__ */ u("div", { class: "modal settings-modal", role: "dialog", "aria-modal": "true", "aria-label": "Settings", ref: trapRef, children: [
     /* @__PURE__ */ u("div", { class: "modal-header", children: [
       /* @__PURE__ */ u("span", { children: "Settings" }),
-      /* @__PURE__ */ u("button", { class: "close-btn", onClick: onClose, children: "×" })
+      /* @__PURE__ */ u("button", { class: "close-btn", onClick: onClose, "aria-label": "Close settings", children: "×" })
     ] }),
     /* @__PURE__ */ u("div", { class: "tabs", children: [
       /* @__PURE__ */ u(
@@ -1018,15 +1132,7 @@ function SettingsModal({ config, onClose }) {
         {
           class: `tab ${activeTab === "providers" ? "active" : ""}`,
           onClick: () => setActiveTab("providers"),
-          children: "Providers"
-        }
-      ),
-      /* @__PURE__ */ u(
-        "button",
-        {
-          class: `tab ${activeTab === "custom" ? "active" : ""}`,
-          onClick: () => setActiveTab("custom"),
-          children: "Custom Models"
+          children: "Connections"
         }
       ),
       /* @__PURE__ */ u(
@@ -1034,50 +1140,23 @@ function SettingsModal({ config, onClose }) {
         {
           class: `tab ${activeTab === "skills" ? "active" : ""}`,
           onClick: () => setActiveTab("skills"),
-          children: "Domain Skills"
-        }
-      ),
-      /* @__PURE__ */ u(
-        "button",
-        {
-          class: `tab ${activeTab === "managed" ? "active" : ""}`,
-          onClick: () => setActiveTab("managed"),
-          children: [
-            "Managed",
-            managedStatus && /* @__PURE__ */ u("span", { style: {
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              display: "inline-block",
-              marginLeft: 4,
-              background: managedStatus.isManaged ? "#2f4a3d" : "#ccc"
-            } })
-          ]
+          children: "Site Tips"
         }
       )
     ] }),
     /* @__PURE__ */ u("div", { class: "modal-body", children: [
-      activeTab === "managed" && /* @__PURE__ */ u(ManagedTab, {}),
       activeTab === "providers" && /* @__PURE__ */ u(
-        ProvidersTab,
+        ConnectionsTab,
         {
           localKeys,
           setLocalKeys,
           selectedProvider,
           setSelectedProvider,
-          agentDefaultIndex,
-          setAgentDefaultIndex,
-          config
-        }
-      ),
-      activeTab === "custom" && /* @__PURE__ */ u(
-        CustomModelsTab,
-        {
-          customModels: config.customModels,
-          newModel: newCustomModel,
-          setNewModel: setNewCustomModel,
-          onAdd: handleAddCustomModel,
-          onRemove: config.removeCustomModel
+          config,
+          newCustomModel,
+          setNewCustomModel,
+          onAddCustomModel: handleAddCustomModel,
+          formError
         }
       ),
       activeTab === "skills" && /* @__PURE__ */ u(
@@ -1089,7 +1168,8 @@ function SettingsModal({ config, onClose }) {
           setSkillForm,
           onAdd: handleAddSkill,
           onEdit: handleEditSkill,
-          onRemove: config.removeUserSkill
+          onRemove: config.removeUserSkill,
+          formError
         }
       )
     ] }),
@@ -1099,23 +1179,43 @@ function SettingsModal({ config, onClose }) {
     ] })
   ] }) });
 }
-function ProvidersTab({
+function ConnectionsTab({
   localKeys,
   setLocalKeys,
   selectedProvider,
   setSelectedProvider,
-  agentDefaultIndex,
-  setAgentDefaultIndex,
-  config
+  config,
+  newCustomModel,
+  setNewCustomModel,
+  onAddCustomModel,
+  formError
 }) {
   return /* @__PURE__ */ u("div", { class: "tab-content", children: [
     /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("h4", { children: "Import Claude credentials" }),
+      /* @__PURE__ */ u("h4", { children: "Hanzi Managed" }),
+      /* @__PURE__ */ u("p", { class: "provider-desc", children: "We handle the AI. 20 free tasks/month, then $0.05/task. No API key needed." }),
+      /* @__PURE__ */ u(
+        "a",
+        {
+          class: "btn btn-primary",
+          href: "https://api.hanzilla.co/pair-self",
+          target: "_blank",
+          rel: "noreferrer",
+          style: { textDecoration: "none" },
+          children: "Sign in & connect"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ u("hr", {}),
+    /* @__PURE__ */ u("div", { class: "provider-section", children: [
+      /* @__PURE__ */ u("h4", { children: "Bring your own model" }),
+      /* @__PURE__ */ u("p", { class: "provider-desc", children: "Use your existing AI subscription. Free forever." })
+    ] }),
+    /* @__PURE__ */ u("div", { class: "provider-section", children: [
+      /* @__PURE__ */ u("h4", { children: "Claude" }),
       /* @__PURE__ */ u("p", { class: "provider-desc", children: [
-        "Import from ",
-        /* @__PURE__ */ u("code", { children: "claude login" }),
-        " to use your Claude Pro/Max subscription. ",
-        /* @__PURE__ */ u("a", { href: "https://github.com/hanzili/hanzi-in-chrome#claude-code-plan-setup", target: "_blank", children: "Setup guide" })
+        "Use your Claude Pro/Max subscription via ",
+        /* @__PURE__ */ u("code", { children: "claude login" })
       ] }),
       config.oauthStatus.isAuthenticated ? /* @__PURE__ */ u("div", { class: "connected-status", children: [
         /* @__PURE__ */ u("span", { class: "status-badge connected", children: "Connected" }),
@@ -1123,12 +1223,10 @@ function ProvidersTab({
       ] }) : /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: config.importCLI, children: "Import from claude login" })
     ] }),
     /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("h4", { children: "Import Codex credentials" }),
+      /* @__PURE__ */ u("h4", { children: "Codex" }),
       /* @__PURE__ */ u("p", { class: "provider-desc", children: [
-        "Import from ",
-        /* @__PURE__ */ u("code", { children: "codex login" }),
-        " to use your ChatGPT Pro/Plus subscription. ",
-        /* @__PURE__ */ u("a", { href: "https://github.com/hanzili/hanzi-in-chrome#codex-plan-setup", target: "_blank", children: "Setup guide" })
+        "Use your ChatGPT Pro/Plus subscription via ",
+        /* @__PURE__ */ u("code", { children: "codex login" })
       ] }),
       config.codexStatus.isAuthenticated ? /* @__PURE__ */ u("div", { class: "connected-status", children: [
         /* @__PURE__ */ u("span", { class: "status-badge connected", children: "Connected" }),
@@ -1136,7 +1234,7 @@ function ProvidersTab({
       ] }) : /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: config.importCodex, children: "Import from codex login" })
     ] }),
     /* @__PURE__ */ u("hr", {}),
-    /* @__PURE__ */ u("h4", { children: "API Keys (Pay-per-use)" }),
+    /* @__PURE__ */ u("h4", { children: "API Keys" }),
     /* @__PURE__ */ u("div", { class: "provider-cards", children: Object.entries(PROVIDERS).map(([id, provider]) => /* @__PURE__ */ u(
       "div",
       {
@@ -1174,96 +1272,69 @@ function ProvidersTab({
         }
       )
     ] }),
-    /* @__PURE__ */ u("hr", {}),
-    /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("h4", { children: "browser automation default" }),
-      /* @__PURE__ */ u("p", { class: "provider-desc", children: [
-        "used by ",
-        /* @__PURE__ */ u("code", { children: "hanzi-browser" }),
-        " and mcp browser tasks. the sidepanel model is still selected from the header."
-      ] }),
-      /* @__PURE__ */ u("div", { class: "api-key-input", children: [
-        /* @__PURE__ */ u("label", { children: "default model for cli / mcp" }),
+    /* @__PURE__ */ u("details", { class: "advanced-section", style: { marginTop: "16px" }, children: [
+      /* @__PURE__ */ u("summary", { children: "Custom endpoint (Ollama, LM Studio, etc.)" }),
+      /* @__PURE__ */ u("div", { class: "custom-model-form", style: { marginTop: "12px" }, children: [
         /* @__PURE__ */ u(
-          "select",
+          "input",
           {
-            value: agentDefaultIndex >= 0 ? String(agentDefaultIndex) : "",
-            onChange: (e) => setAgentDefaultIndex(Number(e.target.value)),
-            disabled: config.availableModels.length === 0,
-            children: config.availableModels.length === 0 ? /* @__PURE__ */ u("option", { value: "", children: "connect a model source first" }) : config.availableModels.map((model, index) => /* @__PURE__ */ u("option", { value: String(index), children: model.name }, `${model.provider}-${model.modelId}-${index}`))
+            type: "text",
+            placeholder: "Display Name",
+            value: newCustomModel.name,
+            onInput: (e) => setNewCustomModel({ ...newCustomModel, name: e.target.value })
+          }
+        ),
+        /* @__PURE__ */ u(
+          "input",
+          {
+            type: "text",
+            placeholder: "Base URL (e.g. http://localhost:11434/v1)",
+            value: newCustomModel.baseUrl,
+            onInput: (e) => setNewCustomModel({ ...newCustomModel, baseUrl: e.target.value })
+          }
+        ),
+        /* @__PURE__ */ u(
+          "input",
+          {
+            type: "text",
+            placeholder: "Model ID",
+            value: newCustomModel.modelId,
+            onInput: (e) => setNewCustomModel({ ...newCustomModel, modelId: e.target.value })
+          }
+        ),
+        /* @__PURE__ */ u(
+          "input",
+          {
+            type: "password",
+            placeholder: "API Key (optional)",
+            value: newCustomModel.apiKey,
+            onInput: (e) => setNewCustomModel({ ...newCustomModel, apiKey: e.target.value })
+          }
+        ),
+        formError && /* @__PURE__ */ u("p", { class: "provider-desc", style: { color: "var(--color-error)", marginBottom: "8px" }, children: formError }),
+        /* @__PURE__ */ u(
+          "button",
+          {
+            class: "btn btn-primary",
+            onClick: onAddCustomModel,
+            disabled: !newCustomModel.name || !newCustomModel.baseUrl || !newCustomModel.modelId,
+            children: "Add"
           }
         )
-      ] })
-    ] }),
-    /* @__PURE__ */ u("hr", {}),
-    /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("h4", { children: "MCP Server" }),
-      /* @__PURE__ */ u("p", { class: "provider-desc", children: [
-        "Control this browser from Claude Code or any MCP client.",
-        " ",
-        /* @__PURE__ */ u("a", { href: "https://github.com/hanzili/hanzi-in-chrome#setup", target: "_blank", children: "Setup guide" })
       ] }),
-      /* @__PURE__ */ u("code", { class: "install-cmd", children: "npm install -g hanzi-in-chrome" })
-    ] })
-  ] });
-}
-function CustomModelsTab({ customModels, newModel, setNewModel, onAdd, onRemove }) {
-  return /* @__PURE__ */ u("div", { class: "tab-content", children: [
-    /* @__PURE__ */ u("p", { class: "tab-desc", children: "Add custom OpenAI-compatible endpoints" }),
-    /* @__PURE__ */ u("div", { class: "custom-model-form", children: [
-      /* @__PURE__ */ u(
-        "input",
-        {
-          type: "text",
-          placeholder: "Display Name",
-          value: newModel.name,
-          onInput: (e) => setNewModel({ ...newModel, name: e.target.value })
-        }
-      ),
-      /* @__PURE__ */ u(
-        "input",
-        {
-          type: "text",
-          placeholder: "Base URL (e.g., https://api.example.com/v1/chat/completions)",
-          value: newModel.baseUrl,
-          onInput: (e) => setNewModel({ ...newModel, baseUrl: e.target.value })
-        }
-      ),
-      /* @__PURE__ */ u(
-        "input",
-        {
-          type: "text",
-          placeholder: "Model ID",
-          value: newModel.modelId,
-          onInput: (e) => setNewModel({ ...newModel, modelId: e.target.value })
-        }
-      ),
-      /* @__PURE__ */ u(
-        "input",
-        {
-          type: "password",
-          placeholder: "API Key (optional)",
-          value: newModel.apiKey,
-          onInput: (e) => setNewModel({ ...newModel, apiKey: e.target.value })
-        }
-      ),
-      /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: onAdd, children: "Add Model" })
-    ] }),
-    customModels.length > 0 && /* @__PURE__ */ u("div", { class: "custom-models-list", children: [
-      /* @__PURE__ */ u("h4", { children: "Custom Models" }),
-      customModels.map((model, i) => /* @__PURE__ */ u("div", { class: "custom-model-item", children: [
+      config.customModels.length > 0 && /* @__PURE__ */ u("div", { class: "custom-models-list", children: config.customModels.map((model, i) => /* @__PURE__ */ u("div", { class: "custom-model-item", children: [
         /* @__PURE__ */ u("div", { class: "model-info", children: [
           /* @__PURE__ */ u("span", { class: "model-name", children: model.name }),
           /* @__PURE__ */ u("span", { class: "model-url", children: model.baseUrl })
         ] }),
-        /* @__PURE__ */ u("button", { class: "btn btn-danger btn-sm", onClick: () => onRemove(i), children: "Remove" })
-      ] }, i))
+        /* @__PURE__ */ u("button", { class: "btn btn-danger btn-sm", onClick: () => config.removeCustomModel(i), children: "Remove" })
+      ] }, i)) })
     ] })
   ] });
 }
-function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, onEdit, onRemove }) {
+function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, onEdit, onRemove, formError }) {
   return /* @__PURE__ */ u("div", { class: "tab-content", children: [
-    /* @__PURE__ */ u("p", { class: "tab-desc", children: "Add domain-specific tips to help the AI navigate websites" }),
+    /* @__PURE__ */ u("p", { class: "tab-desc", children: "Teach Hanzi how to navigate specific websites better" }),
     /* @__PURE__ */ u(
       "button",
       {
@@ -1291,6 +1362,7 @@ function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, 
           rows: 4
         }
       ),
+      formError && /* @__PURE__ */ u("p", { class: "provider-desc", style: { color: "var(--color-error)", marginBottom: "8px" }, children: formError }),
       /* @__PURE__ */ u("div", { class: "skill-form-actions", children: [
         /* @__PURE__ */ u("button", { class: "btn btn-secondary", onClick: () => setSkillForm({ ...skillForm, isOpen: false }), children: "Cancel" }),
         /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: onAdd, children: skillForm.editIndex >= 0 ? "Update" : "Add" })
@@ -1324,122 +1396,20 @@ function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, 
     ] })
   ] });
 }
-const DEFAULT_API_URL = "https://api.hanzilla.co";
-function ManagedTab() {
-  var _a;
-  const [status, setStatus] = d(null);
-  const [pairingToken, setPairingToken] = d("");
-  const [apiUrl, setApiUrl] = d(DEFAULT_API_URL);
-  const [showAdvanced, setShowAdvanced] = d(false);
-  const [message, setMessage] = d("");
-  const [pairing, setPairing] = d(false);
-  y(() => {
-    chrome.runtime.sendMessage({ type: "GET_MANAGED_STATUS" }, (res) => {
-      if (res) setStatus(res);
-    });
-  }, []);
-  const handlePair = () => {
-    if (!pairingToken.trim()) return;
-    setPairing(true);
-    setMessage("");
-    chrome.runtime.sendMessage({
-      type: "MANAGED_PAIR",
-      payload: { pairing_token: pairingToken.trim(), api_url: apiUrl.trim() || DEFAULT_API_URL }
-    }, (res) => {
-      setPairing(false);
-      if (res == null ? void 0 : res.success) {
-        setMessage("");
-        setPairingToken("");
-        setStatus({ isManaged: true, browserSessionId: res.browserSessionId });
-      } else {
-        const err = (res == null ? void 0 : res.error) || "Unknown error";
-        let msg;
-        if (err.includes("expired")) {
-          msg = "Token expired. Generate a new one from the developer console.";
-        } else if (err.includes("consumed") || err.includes("already")) {
-          msg = "Token already used. Each token can only be used once.";
-        } else if (err.includes("Invalid")) {
-          msg = "Invalid token. Make sure you copied the full token starting with hic_pair_";
-        } else {
-          msg = `Connection failed: ${err}`;
-        }
-        setMessage(msg);
-      }
-    });
-  };
-  const handleDisconnect = () => {
-    chrome.runtime.sendMessage({ type: "MANAGED_DISCONNECT" }, () => {
-      setStatus({ isManaged: false, browserSessionId: null });
-      setMessage("Disconnected.");
-    });
-  };
-  return /* @__PURE__ */ u("div", { class: "tab-content", children: [
-    /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("h4", { children: "Pair this browser" }),
-      /* @__PURE__ */ u("p", { class: "provider-desc", children: "Paste a pairing token to connect this browser to a Hanzi workspace. Once paired, your workspace can run tasks in this browser remotely." })
-    ] }),
-    (status == null ? void 0 : status.isManaged) ? /* @__PURE__ */ u("div", { class: "provider-section", children: [
-      /* @__PURE__ */ u("div", { class: "connected-status", children: [
-        /* @__PURE__ */ u("span", { class: "status-badge connected", children: "Paired" }),
-        /* @__PURE__ */ u("code", { style: { fontSize: "0.8em", marginLeft: "8px" }, children: [
-          (_a = status.browserSessionId) == null ? void 0 : _a.slice(0, 8),
-          "..."
-        ] }),
-        /* @__PURE__ */ u("button", { class: "btn btn-secondary btn-sm", onClick: handleDisconnect, style: { marginLeft: "8px" }, children: "Disconnect" })
-      ] }),
-      /* @__PURE__ */ u("p", { class: "provider-desc", style: { marginTop: "8px", fontSize: "0.85em" }, children: "This browser is connected and ready to receive tasks." })
-    ] }) : /* @__PURE__ */ u(k, { children: [
-      /* @__PURE__ */ u("div", { class: "provider-section", children: /* @__PURE__ */ u("div", { class: "api-key-input", children: [
-        /* @__PURE__ */ u("label", { children: "Pairing token" }),
-        /* @__PURE__ */ u(
-          "input",
-          {
-            type: "text",
-            value: pairingToken,
-            onInput: (e) => setPairingToken(e.target.value),
-            placeholder: "hic_pair_...",
-            onKeyDown: (e) => e.key === "Enter" && handlePair(),
-            autoFocus: true
-          }
-        ),
-        /* @__PURE__ */ u("button", { class: "btn btn-primary", onClick: handlePair, disabled: pairing || !pairingToken.trim(), children: pairing ? "Connecting..." : "Connect" })
-      ] }) }),
-      /* @__PURE__ */ u("div", { class: "provider-section", children: [
-        /* @__PURE__ */ u(
-          "button",
-          {
-            class: "btn btn-sm",
-            style: { fontSize: "0.8em", opacity: 0.7, background: "none", border: "none", padding: "4px 0", cursor: "pointer", textDecoration: "underline" },
-            onClick: () => setShowAdvanced(!showAdvanced),
-            children: showAdvanced ? "Hide advanced options" : "Advanced: custom backend URL"
-          }
-        ),
-        showAdvanced && /* @__PURE__ */ u("div", { class: "api-key-input", style: { marginTop: "8px" }, children: [
-          /* @__PURE__ */ u("label", { children: "Backend URL" }),
-          /* @__PURE__ */ u(
-            "input",
-            {
-              type: "text",
-              value: apiUrl,
-              onInput: (e) => setApiUrl(e.target.value),
-              placeholder: DEFAULT_API_URL
-            }
-          ),
-          /* @__PURE__ */ u("p", { class: "provider-desc", style: { fontSize: "0.75em", marginTop: "4px" }, children: "Only change this if you are running a local or custom Hanzi deployment." })
-        ] })
-      ] })
-    ] }),
-    message && /* @__PURE__ */ u("div", { class: "provider-section", children: /* @__PURE__ */ u("p", { class: "provider-desc", style: { marginTop: "4px", color: message.startsWith("Failed") ? "#c62828" : void 0 }, children: message }) }),
-    /* @__PURE__ */ u("div", { class: "provider-section", children: /* @__PURE__ */ u("p", { class: "provider-desc", style: { opacity: 0.6, fontSize: "0.8em" }, children: [
-      "Get a pairing token from the app that is integrating Hanzi, or create one with ",
-      /* @__PURE__ */ u("code", { children: "POST /v1/browser-sessions/pair" }),
-      "."
-    ] }) })
-  ] });
-}
 function PlanModal({ plan, onApprove, onCancel }) {
-  return /* @__PURE__ */ u("div", { class: "modal-overlay", children: /* @__PURE__ */ u("div", { class: "modal", children: [
-    /* @__PURE__ */ u("div", { class: "modal-header", children: "Review Plan" }),
+  y(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onCancel]);
+  const trapRef = useFocusTrap(true);
+  return /* @__PURE__ */ u("div", { class: "modal-overlay", onClick: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ u("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-label": "Review plan", ref: trapRef, children: [
+    /* @__PURE__ */ u("div", { class: "modal-header", children: [
+      /* @__PURE__ */ u("span", { children: "Review Plan" }),
+      /* @__PURE__ */ u("button", { class: "close-btn", onClick: onCancel, "aria-label": "Close plan review", children: "×" })
+    ] }),
     /* @__PURE__ */ u("div", { class: "modal-body", children: [
       /* @__PURE__ */ u("div", { class: "plan-section", children: [
         /* @__PURE__ */ u("h4", { children: "Domains to visit:" }),
@@ -1462,19 +1432,19 @@ const HUMAN_EXAMPLES = [
   "Compare prices for flights to Tokyo next week"
 ];
 const AGENT_EXAMPLES = [
-  "Search for recent AI news",
+  "Check the staging deployment for errors",
   "Fill out this form with my details",
-  "Find the best price for..."
+  "Read the docs and summarize the setup steps"
 ];
 function EmptyState({ onSelectExample, primaryMode }) {
   const examples = primaryMode === "agent" ? AGENT_EXAMPLES : HUMAN_EXAMPLES;
   return /* @__PURE__ */ u("div", { class: "empty-state", children: [
-    /* @__PURE__ */ u("div", { class: "empty-icon", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.5", children: [
-      /* @__PURE__ */ u("circle", { cx: "12", cy: "12", r: "10" }),
-      /* @__PURE__ */ u("path", { d: "M12 6v6l4 2" })
+    /* @__PURE__ */ u("div", { class: "empty-icon", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
+      /* @__PURE__ */ u("rect", { width: "24", height: "24", rx: "6", fill: "currentColor" }),
+      /* @__PURE__ */ u("path", { d: "M7 7v10M17 7v10M7 12h10", stroke: "var(--bg-primary)", "stroke-width": "2.5", "stroke-linecap": "round" })
     ] }) }),
-    /* @__PURE__ */ u("h2", { children: "Hanzi in Chrome" }),
-    /* @__PURE__ */ u("p", { children: "Describe what you want to accomplish and the AI will browse autonomously to complete your task." }),
+    /* @__PURE__ */ u("h2", { children: "What should we browse?" }),
+    /* @__PURE__ */ u("p", { children: "Tell Hanzi what to do and it will take over the browser." }),
     /* @__PURE__ */ u("div", { class: "empty-examples", children: examples.map((example, i) => /* @__PURE__ */ u(
       "button",
       {
@@ -1489,28 +1459,55 @@ function EmptyState({ onSelectExample, primaryMode }) {
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = d(false);
   const [suggestedText, setSuggestedText] = d("");
+  const [isManaged, setIsManaged] = d(false);
   const config = useConfig();
   const chat = useChat();
+  y(() => {
+    chrome.runtime.sendMessage({ type: "GET_MANAGED_STATUS" }, (res) => {
+      if (res == null ? void 0 : res.isManaged) setIsManaged(true);
+    });
+    const listener = (changes) => {
+      if (changes.managed_session_token) {
+        setIsManaged(!!changes.managed_session_token.newValue);
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
+  }, []);
+  y(() => {
+    const handleKeyboard = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        chat.clearChat();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setIsSettingsOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener("keydown", handleKeyboard);
+    return () => document.removeEventListener("keydown", handleKeyboard);
+  }, [chat]);
   if (config.isLoading) {
     return /* @__PURE__ */ u("div", { class: "loading-container", children: /* @__PURE__ */ u("div", { class: "loading-spinner" }) });
   }
-  if (config.availableModels.length === 0) {
+  if (config.availableModels.length === 0 && !isManaged) {
     return /* @__PURE__ */ u("div", { class: "app", children: [
       /* @__PURE__ */ u("div", { class: "empty-state", children: [
-        /* @__PURE__ */ u("div", { class: "empty-icon", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.5", children: [
-          /* @__PURE__ */ u("circle", { cx: "12", cy: "12", r: "10" }),
-          /* @__PURE__ */ u("path", { d: "M12 6v6l4 2" })
+        /* @__PURE__ */ u("div", { class: "empty-icon", children: /* @__PURE__ */ u("svg", { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
+          /* @__PURE__ */ u("rect", { width: "24", height: "24", rx: "6", fill: "currentColor" }),
+          /* @__PURE__ */ u("path", { d: "M7 7v10M17 7v10M7 12h10", stroke: "var(--bg-primary)", "stroke-width": "2.5", "stroke-linecap": "round" })
         ] }) }),
-        /* @__PURE__ */ u("h2", { children: "Hanzi needs credentials" }),
-        /* @__PURE__ */ u("p", { children: "Run the setup command in your terminal, or add credentials in settings." }),
+        /* @__PURE__ */ u("h2", { children: "Almost ready" }),
+        /* @__PURE__ */ u("p", { children: "Connect a model to start browsing. The fastest way:" }),
         /* @__PURE__ */ u("div", { style: { display: "flex", flexDirection: "column", gap: "8px", alignItems: "center", marginTop: "8px" }, children: [
-          /* @__PURE__ */ u("code", { style: { padding: "8px 14px", background: "var(--surface-secondary)", borderRadius: "8px", fontSize: "13px" }, children: "npx hanzi-in-chrome setup" }),
+          /* @__PURE__ */ u("code", { style: { padding: "8px 14px", background: "var(--bg-tertiary)", borderRadius: "8px", fontSize: "13px" }, children: "npx hanzi-browse setup" }),
           /* @__PURE__ */ u(
             "button",
             {
               class: "btn btn-secondary",
               onClick: () => setIsSettingsOpen(true),
-              children: "Open Settings"
+              children: "Or connect manually"
             }
           )
         ] })
@@ -1529,8 +1526,8 @@ function App() {
     /* @__PURE__ */ u(
       Header,
       {
-        currentModel: config.currentModel,
-        availableModels: config.availableModels,
+        currentModel: isManaged ? { name: "Hanzi Managed" } : config.currentModel,
+        availableModels: isManaged ? [] : config.availableModels,
         currentModelIndex: config.currentModelIndex,
         onModelSelect: config.selectModel,
         onNewChat: chat.clearChat,
@@ -1553,7 +1550,7 @@ function App() {
         onStop: chat.stopTask,
         onAddImage: chat.addImage,
         onRemoveImage: chat.removeImage,
-        hasModels: config.availableModels.length > 0,
+        hasModels: config.availableModels.length > 0 || isManaged,
         suggestedText,
         onClearSuggestion: () => setSuggestedText(""),
         onOpenSettings: () => setIsSettingsOpen(true)

@@ -12,7 +12,7 @@ import { randomUUID, randomBytes, createHash } from "crypto";
 function hashSecret(secret) {
     return createHash("sha256").update(secret).digest("hex");
 }
-const DATA_DIR = join(homedir(), ".hanzi-in-chrome", "managed");
+const DATA_DIR = join(homedir(), ".hanzi-browse", "managed");
 let data = {
     workspaces: {},
     apiKeys: {},

@@ -327,7 +327,7 @@ export async function deleteApiKey(id: string, workspaceId: string): Promise<boo
 
 export async function createPairingToken(
   workspaceId: string,
-  apiKeyId: string,
+  apiKeyId: string | null,
   metadata?: { label?: string; externalUserId?: string }
 ): Promise<PairingToken & { _plainToken: string }> {
   const plainToken = `hic_pair_${randomBytes(32).toString("hex")}`;
@@ -341,7 +341,7 @@ export async function createPairingToken(
   return {
     token: tokenHash,
     workspaceId,
-    createdBy: apiKeyId,
+    createdBy: apiKeyId || "",
     createdAt: now,
     expiresAt,
     consumed: false,

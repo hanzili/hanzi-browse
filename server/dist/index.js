@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// If invoked as `npx hanzi-in-chrome setup`, delegate to the CLI
+// If invoked as `npx hanzi-browse setup`, delegate to the CLI
 if (process.argv[2] === 'setup') {
     const { fileURLToPath } = await import('url');
     const { dirname, join } = await import('path');
@@ -13,7 +13,7 @@ if (process.argv[2] === 'setup') {
     process.exit(0);
 }
 /**
- * Hanzi in Chrome MCP Server
+ * Hanzi Browse MCP Server
  *
  * MCP transport + session wrapper for the extension-side browser agent.
  * The Chrome extension owns browser execution; this server forwards tasks,
@@ -78,9 +78,9 @@ async function runManagedTask(task, url, context) {
 const sessions = new Map();
 const pendingScreenshots = new Map();
 // Max time a task can run before we return (configurable, default 5 minutes)
-const TASK_TIMEOUT_MS = parseInt(process.env.HANZI_IN_CHROME_TIMEOUT_MS || String(5 * 60 * 1000), 10);
-const MAX_CONCURRENT = parseInt(process.env.HANZI_IN_CHROME_MAX_SESSIONS || "5", 10);
-const SESSION_TTL_MS = parseInt(process.env.HANZI_IN_CHROME_SESSION_TTL_MS || String(60 * 60 * 1000), 10);
+const TASK_TIMEOUT_MS = parseInt(process.env.HANZI_BROWSE_TIMEOUT_MS || String(5 * 60 * 1000), 10);
+const MAX_CONCURRENT = parseInt(process.env.HANZI_BROWSE_MAX_SESSIONS || "5", 10);
+const SESSION_TTL_MS = parseInt(process.env.HANZI_BROWSE_SESSION_TTL_MS || String(60 * 60 * 1000), 10);
 // WebSocket relay connection
 let connection;
 const pendingWaiters = [];
@@ -264,7 +264,7 @@ function waitForSessionTerminal(sessionId, timeoutMs = TASK_TIMEOUT_MS) {
         (msg.type === "task_complete" || msg.type === "task_error"), timeoutMs);
 }
 // --- Helpers ---
-const EXTENSION_URL = "https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd";
+const EXTENSION_URL = "https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd";
 function openInBrowser(url) {
     const cmd = process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open";
     exec(`${cmd} "${url}"`);
@@ -523,10 +523,10 @@ Collect: name, headline, and at least one personalization hook per person.
 ## Step 3: Dedup with outreach log
 
 Before searching, check prior outreach:
-\`wc -l ~/.hanzi-in-chrome/contacted.txt 2>/dev/null || echo "0 (new log)"\`
+\`wc -l ~/.hanzi-browse/contacted.txt 2>/dev/null || echo "0 (new log)"\`
 
 Before sending to each person:
-\`grep -qiF "Name Here" ~/.hanzi-in-chrome/contacted.txt 2>/dev/null\`
+\`grep -qiF "Name Here" ~/.hanzi-browse/contacted.txt 2>/dev/null\`
 Skip if found (exit 0).
 
 ## Step 4: Show me the list before sending
@@ -555,7 +555,7 @@ Personalization varies by how you found them:
 **Mutual-connection-based**: "We both know [person] — I noticed you're working on [thing] and thought we should connect."
 
 After each send, log immediately:
-\`mkdir -p ~/.hanzi-in-chrome && echo "Name Here" >> ~/.hanzi-in-chrome/contacted.txt\`
+\`mkdir -p ~/.hanzi-browse && echo "Name Here" >> ~/.hanzi-browse/contacted.txt\`
 
 Report progress: "Sent 3/12 — continuing..."
 
@@ -1073,7 +1073,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 // --- Startup ---
 async function main() {
-    console.error("[MCP] Starting Hanzi in Chrome MCP Server v2.0...");
+    console.error("[MCP] Starting Hanzi Browse MCP Server v2.0...");
     if (IS_MANAGED_MODE) {
         console.error(`[MCP] Mode: MANAGED (proxying tasks to ${MANAGED_API_URL})`);
         console.error(`[MCP] API key: ${MANAGED_API_KEY.slice(0, 20)}...`);

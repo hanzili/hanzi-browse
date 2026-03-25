@@ -19,7 +19,7 @@ Try calling `browser_status` to verify the browser extension is reachable. If th
 
 > **Hanzi isn't set up yet.** This skill needs the hanzi browser extension running in Chrome.
 >
-> 1. Install from the Chrome Web Store: https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd
+> 1. Install from the Chrome Web Store: https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd
 > 2. The extension will walk you through setup (~1 minute)
 > 3. Then come back and run this again
 
@@ -79,12 +79,12 @@ Collect: name, headline, and at least one specific personalization hook per pers
 
 Check prior outreach:
 ```bash
-wc -l ~/.hanzi-in-chrome/contacted.txt 2>/dev/null || echo "0 (new log)"
+wc -l ~/.hanzi-browse/contacted.txt 2>/dev/null || echo "0 (new log)"
 ```
 
 Before sending to each person:
 ```bash
-grep -qiF "Name Here" ~/.hanzi-in-chrome/contacted.txt 2>/dev/null
+grep -qiF "Name Here" ~/.hanzi-browse/contacted.txt 2>/dev/null
 ```
 Skip if found (exit 0).
 
@@ -121,7 +121,7 @@ Personalization varies by source:
 
 After each send, log immediately:
 ```bash
-mkdir -p ~/.hanzi-in-chrome && echo "Name Here" >> ~/.hanzi-in-chrome/contacted.txt
+mkdir -p ~/.hanzi-browse && echo "Name Here" >> ~/.hanzi-browse/contacted.txt
 ```
 
 Report progress: "Sent 3/12 — continuing..."

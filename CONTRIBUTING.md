@@ -7,8 +7,8 @@ Thanks for wanting to contribute! Here's what you need to know.
 Prerequisites: [Docker](https://docs.docker.com/get-docker/), Node.js 18+, a Chromium browser.
 
 ```bash
-git clone https://github.com/hanzili/hanzi-in-chrome
-cd hanzi-in-chrome
+git clone https://github.com/hanzili/hanzi-browse
+cd hanzi-browse
 make dev
 ```
 
@@ -45,7 +45,7 @@ SDK (sdk/)                 → TypeScript (sdk/dist/)
 ```
 
 Two product paths:
-- **Use Hanzi now** — CLI-first. `npx hanzi-in-chrome setup` configures local BYOM usage.
+- **Use Hanzi now** — CLI-first. `npx hanzi-browse setup` configures local BYOM usage.
 - **Build with Hanzi** — API/dashboard-first. Sign in → developer console → create key → pair browser → run tasks.
 
 Key internal docs:
@@ -134,4 +134,4 @@ Optional:
 
 ## Questions?
 
-[Discord](https://discord.gg/hahgu5hcA5) · [GitHub Issues](https://github.com/hanzili/hanzi-in-chrome/issues) · hanzili0217@gmail.com
+[Discord](https://discord.gg/hahgu5hcA5) · [GitHub Issues](https://github.com/hanzili/hanzi-browse/issues) · hanzili0217@gmail.com

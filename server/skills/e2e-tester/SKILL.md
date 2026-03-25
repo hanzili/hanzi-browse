@@ -19,7 +19,7 @@ Try calling `browser_status` to verify the browser extension is reachable. If th
 
 > **Hanzi isn't set up yet.** This skill needs the hanzi browser extension running in Chrome.
 >
-> 1. Install from the Chrome Web Store: https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd
+> 1. Install from the Chrome Web Store: https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd
 > 2. The extension will walk you through setup (~1 minute)
 > 3. Then come back and run this again
 

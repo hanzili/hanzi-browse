@@ -120,9 +120,9 @@
 
         <div class="sidebar-section">
             <div class="sidebar-section-title">Resources</div>
-            <a class="nav-link" href="https://github.com/hanzili/llm-in-chrome/tree/main/examples/partner-quickstart">Sample App</a>
-            <a class="nav-link" href="https://github.com/hanzili/llm-in-chrome/tree/main/sdk">SDK Source</a>
-            <a class="nav-link" href="https://github.com/hanzili/llm-in-chrome">GitHub</a>
+            <a class="nav-link" href="https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart">Sample App</a>
+            <a class="nav-link" href="https://github.com/hanzili/hanzi-browse/tree/main/sdk">SDK Source</a>
+            <a class="nav-link" href="https://github.com/hanzili/hanzi-browse">GitHub</a>
             <a class="nav-link" href="https://discord.gg/hahgu5hcA5">Discord</a>
         </div>
     </nav>
@@ -149,8 +149,8 @@
         <p>One command sets up everything: detects your browsers, installs the Chrome extension, finds AI agents on your machine, and configures MCP.</p>
 
         <div class="code-block">
-            <pre>npx hanzi-in-chrome setup</pre>
-            <button class="copy-btn" data-copy="npx hanzi-in-chrome setup" onclick="copyData(this)">Copy</button>
+            <pre>npx hanzi-browse setup</pre>
+            <button class="copy-btn" data-copy="npx hanzi-browse setup" onclick="copyData(this)">Copy</button>
         </div>
 
         <p>Supports <strong>Claude Code</strong>, <strong>Cursor</strong>, <strong>Windsurf</strong>, <strong>Claude Desktop</strong>, and <strong>Codex</strong>.</p>
@@ -175,14 +175,14 @@
         <h3>Manual setup</h3>
         <p>If you prefer to configure manually:</p>
         <div class="code-block"><pre># Claude Code
-claude mcp add browser -- npx -y hanzi-in-chrome
+claude mcp add browser -- npx -y hanzi-browse
 
 # Cursor / Windsurf (mcp.json)
 {
   "mcpServers": {
     "browser": {
       "command": "npx",
-      "args": ["-y", "hanzi-in-chrome"]
+      "args": ["-y", "hanzi-browse"]
     }
   }
 }</pre></div>
@@ -195,38 +195,118 @@ claude mcp add browser -- npx -y hanzi-in-chrome
         <h2 id="build-with-hanzi">Build with Hanzi</h2>
         <p>Embed browser automation in your product. Your app calls the Hanzi API, a real browser executes the task, you get the result back.</p>
 
+        <h3>How it works</h3>
+        <div style="margin: 16px 0 24px; border: 1px solid #e5ddd0; border-radius: 16px; background: #fffdf8; padding: 24px 16px; overflow-x: auto;">
+            <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 800px; margin: 0 auto; display: block;" font-family="'Avenir Next', 'Segoe UI', Helvetica, sans-serif">
+                <rect x="10" y="50" width="180" height="120" rx="16" fill="#f5f1e8" stroke="#e5ddd0" stroke-width="1.5"/>
+                <text x="100" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#1f1711">Your App</text>
+                <text x="100" y="112" text-anchor="middle" font-size="11" fill="#6d6256">POST /v1/tasks</text>
+                <text x="100" y="128" text-anchor="middle" font-size="11" fill="#6d6256">GET /v1/tasks/:id</text>
+                <text x="100" y="144" text-anchor="middle" font-size="11" fill="#6d6256">Shows results to user</text>
+                <line x1="195" y1="95" x2="295" y2="95" stroke="#4a3d6b" stroke-width="2" stroke-dasharray="6,4"/>
+                <polygon points="293,89 305,95 293,101" fill="#4a3d6b"/>
+                <text x="250" y="85" text-anchor="middle" font-size="10" fill="#6d6256">API call</text>
+                <rect x="310" y="30" width="180" height="160" rx="16" fill="#4a3d6b" stroke="#362b52" stroke-width="1.5"/>
+                <text x="400" y="68" text-anchor="middle" font-size="15" font-weight="700" fill="white">Hanzi</text>
+                <text x="400" y="90" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.7)">Runs the AI agent</text>
+                <text x="400" y="108" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.7)">Executes browser tools</text>
+                <text x="400" y="126" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.7)">Returns answer</text>
+                <rect x="345" y="145" width="110" height="28" rx="14" fill="rgba(255,255,255,0.15)"/>
+                <text x="400" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="rgba(255,255,255,0.8)">Vertex AI (Gemini)</text>
+                <line x1="495" y1="95" x2="595" y2="95" stroke="#4a3d6b" stroke-width="2" stroke-dasharray="6,4"/>
+                <polygon points="593,89 605,95 593,101" fill="#4a3d6b"/>
+                <text x="550" y="85" text-anchor="middle" font-size="10" fill="#6d6256">WebSocket</text>
+                <rect x="610" y="50" width="180" height="120" rx="16" fill="#e8f0ec" stroke="#c5d9cd" stroke-width="1.5"/>
+                <text x="700" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#2f4a3d">User's Browser</text>
+                <text x="700" y="112" text-anchor="middle" font-size="11" fill="#5a7a6a">Chrome + Hanzi extension</text>
+                <text x="700" y="128" text-anchor="middle" font-size="11" fill="#5a7a6a">Real signed-in session</text>
+                <text x="700" y="144" text-anchor="middle" font-size="11" fill="#5a7a6a">Clicks, reads, navigates</text>
+                <line x1="605" y1="155" x2="505" y2="155" stroke="#2f4a3d" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <polygon points="507,149 495,155 507,161" fill="#2f4a3d"/>
+                <line x1="305" y1="155" x2="205" y2="155" stroke="#2f4a3d" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <polygon points="207,149 195,155 207,161" fill="#2f4a3d"/>
+                <text x="550" y="175" text-anchor="middle" font-size="10" fill="#6d6256">tool results</text>
+                <text x="250" y="175" text-anchor="middle" font-size="10" fill="#6d6256">answer</text>
+            </svg>
+        </div>
+
+        <h3>Quick start: let your AI agent build it</h3>
+        <p>Copy this prompt into Claude Code, Cursor, or any AI coding agent. It has everything the agent needs to integrate Hanzi into your project.</p>
+
+        <div class="code-block" style="position: relative;">
+            <button class="copy-btn" data-copy-target="integration-prompt" onclick="copyTarget(this)" style="position: absolute; top: 12px; right: 12px; z-index: 1;">Copy prompt</button>
+            <pre id="integration-prompt" style="white-space: pre-wrap; font-size: 12px; line-height: 1.6; padding-top: 44px;">Add browser automation to this project using the Hanzi API. Read the codebase first, then ask me:
+
+1. What browser task should Hanzi automate? (e.g. "read patient chart", "fill out a form", "extract data from a web portal")
+2. Where in the UI should the browser pairing flow go? (e.g. settings page, onboarding, a dedicated page)
+3. Where should task results appear? (e.g. inline in the app, a chat interface, a dashboard)
+
+Then build the integration using this API reference:
+
+## Hanzi API (base URL: https://api.hanzilla.co)
+
+Auth: `Authorization: Bearer hic_live_...` header on all requests.
+
+### Core flow
+1. Create pairing token → show user a link → they connect their browser
+2. Run tasks against their connected browser → poll for results
+3. Show the answer in your app
+
+### Endpoints
+
+POST /v1/browser-sessions/pair
+  Body: {"label": "User Name", "external_user_id": "your_user_id"}
+  Returns: {"pairing_token": "hic_pair_...", "expires_in_seconds": 300}
+  → Build a link: https://api.hanzilla.co/pair/{pairing_token}
+  → User clicks it, their Chrome auto-pairs. Token expires in 5 min.
+
+GET /v1/browser-sessions
+  Returns: {"sessions": [{"id": "...", "status": "connected", "label": "..."}]}
+
+POST /v1/tasks
+  Body: {"task": "description", "browser_session_id": "...", "url": "optional", "context": "optional"}
+  Returns: {"id": "task_id", "status": "running"}
+  → task: what to do (max 10K chars). Be specific.
+  → url: starting page (optional). If set, agent navigates there first.
+  → context: extra info like form data, preferences (max 50K chars).
+
+GET /v1/tasks/:id
+  Returns: {"status": "running|complete|error", "answer": "...", "steps": 4}
+  → Poll every 2s until status != "running". Typical task takes 10-60s.
+
+POST /v1/tasks/:id/cancel
+  → Stops a running task.
+
+GET /v1/tasks/:id/steps
+  Returns: {"steps": [{"step": 1, "status": "tool_use", "toolName": "navigate", ...}]}
+  → Full execution log for debugging.
+
+GET /v1/billing/credits
+  Returns: {"free_remaining": 20, "credit_balance": 0, "free_tasks_per_month": 20}
+
+### Key details
+- 20 free tasks/month, then $0.05 per completed task. Errors are free.
+- Tasks timeout after 30 min. Use cancel to stop early.
+- Browser sessions last 30 days and auto-reconnect.
+- The user needs the Hanzi Chrome extension installed.
+  Install link: https://chromewebstore.google.com/detail/iklpkemlmbhemkiojndpbhoakgikpmcd
+
+### Example: Express + HTML (minimal)
+  See: https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart
+
+Read the codebase to understand the stack and project structure, then ask me the 3 questions above. After I answer, build the full integration.</pre>
+        </div>
+
+        <h3>Or follow the steps manually</h3>
         <ol class="steps">
             <li><strong>Sign in</strong> — <a href="https://api.hanzilla.co/api/auth/sign-in/social">open your developer console</a> (Google or email)</li>
             <li><strong>Create an API key</strong> — from the console, or via <code>POST /v1/api-keys</code></li>
-            <li><strong>Pair a browser</strong> — generate a pairing token, have your user paste it in the Hanzi extension</li>
+            <li><strong>Pair a browser</strong> — generate a pairing token, send your user a link (<code>/pair/{token}</code>)</li>
             <li><strong>Run a task</strong> — <code>POST /v1/tasks</code> with a task and browser session ID</li>
         </ol>
 
-        <div class="code-block">
-            <span class="label">TypeScript</span>
-            <pre>import { HanziClient } from '@hanzi/browser-agent';
-
-const client = new HanziClient({
-  apiKey: process.env.HANZI_API_KEY,
-});
-
-// Create a pairing token for your user
-const { pairingToken } = await client.createPairingToken();
-
-// List connected browsers
-const sessions = await client.listSessions();
-
-// Run a task
-const result = await client.runTask({
-  browserSessionId: sessions[0].id,
-  task: 'Read the patient chart on the current page',
-});
-
-console.log(result.answer);</pre>
-        </div>
-
         <div class="callout callout-info">
-            <strong>Sample app:</strong> See <a href="https://github.com/hanzili/llm-in-chrome/tree/main/examples/partner-quickstart">examples/partner-quickstart</a> for a complete working integration (Express + HTML, ~150 lines).
+            <strong>Sample app:</strong> See <a href="https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart">examples/partner-quickstart</a> for a complete working integration (Express + HTML, ~150 lines).
         </div>
 
         <!-- ─── AUTHENTICATION ─── -->
@@ -509,7 +589,7 @@ curl -X POST https://api.hanzilla.co/v1/browser-sessions/pair \
             <tr><td><strong>Workspace isolation</strong></td><td>All resources scoped to workspace. Cross-workspace access returns 404.</td></tr>
             <tr><td><strong>BYOM privacy</strong></td><td>No data leaves your machine. Screenshots sent only to your chosen provider.</td></tr>
         </table>
-        <p>Full privacy policy: <a href="https://github.com/hanzili/llm-in-chrome/blob/main/PRIVACY.md">PRIVACY.md</a></p>
+        <p>Full privacy policy: <a href="https://github.com/hanzili/hanzi-browse/blob/main/PRIVACY.md">PRIVACY.md</a></p>
 
     </main>
 </div>
@@ -519,6 +599,13 @@ function copyData(btn) {
     navigator.clipboard.writeText(btn.dataset.copy || btn.previousElementSibling?.textContent || '');
     const orig = btn.textContent;
     btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = orig, 1500);
+}
+function copyTarget(btn) {
+    const el = document.getElementById(btn.dataset.copyTarget);
+    if (el) navigator.clipboard.writeText(el.textContent);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
     setTimeout(() => btn.textContent = orig, 1500);
 }
 

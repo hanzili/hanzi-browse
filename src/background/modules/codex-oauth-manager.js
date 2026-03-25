@@ -7,7 +7,7 @@
 
 import { relayRequest, isRelayConnected } from './mcp-bridge.js';
 
-const NATIVE_HOST_NAME = 'com.hanzi_in_chrome.oauth_host';
+const NATIVE_HOST_NAME = 'com.hanzi_browse.oauth_host';
 
 /**
  * Import OAuth credentials from Codex CLI installation

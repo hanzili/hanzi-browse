@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Hanzi in Chrome - Native Host Installer
-# Run with: curl -fsSL https://raw.githubusercontent.com/hanzili/hanzi-in-chrome/main/install.sh | bash
+# Hanzi Browse - Native Host Installer
+# Run with: curl -fsSL https://raw.githubusercontent.com/hanzili/hanzi-browse/main/install.sh | bash
 
 set -e
 
-REPO_URL="https://raw.githubusercontent.com/hanzili/hanzi-in-chrome/main"
-INSTALL_DIR="$HOME/.hanzi-in-chrome"
+REPO_URL="https://raw.githubusercontent.com/hanzili/hanzi-browse/main"
+INSTALL_DIR="$HOME/.hanzi-browse"
 
 # Colors
 RED='\033[0;31m'
@@ -15,7 +15,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Hanzi in Chrome - Native Host Installer                 ║"
+echo "║  Hanzi Browse - Native Host Installer                 ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -108,8 +108,8 @@ DEV_ID="dnajlkacmnpfmilkeialficajdgkkkfo"          # Development (replace with y
 
 # Install manifest to all detected browsers
 MANIFEST_CONTENT="{
-  \"name\": \"com.hanzi_in_chrome.oauth_host\",
-  \"description\": \"OAuth local server for Hanzi in Chrome extension\",
+  \"name\": \"com.hanzi_browse.oauth_host\",
+  \"description\": \"OAuth local server for Hanzi Browse extension\",
   \"path\": \"$WRAPPER_SCRIPT\",
   \"type\": \"stdio\",
   \"allowed_origins\": [
@@ -120,7 +120,7 @@ MANIFEST_CONTENT="{
 
 for MANIFEST_DIR in "${MANIFEST_DIRS[@]}"; do
     mkdir -p "$MANIFEST_DIR"
-    MANIFEST_FILE="$MANIFEST_DIR/com.hanzi_in_chrome.oauth_host.json"
+    MANIFEST_FILE="$MANIFEST_DIR/com.hanzi_browse.oauth_host.json"
     echo "$MANIFEST_CONTENT" > "$MANIFEST_FILE"
     BROWSER_NAME="$(basename "$(dirname "$MANIFEST_DIR")")"
     echo -e "${GREEN}✓${NC} Installed manifest for $BROWSER_NAME"
@@ -148,6 +148,6 @@ echo "To uninstall:"
 echo "  rm -rf $INSTALL_DIR"
 echo "  # Remove manifests from all browsers:"
 for MANIFEST_DIR in "${MANIFEST_DIRS[@]}"; do
-    echo "  rm \"$MANIFEST_DIR/com.hanzi_in_chrome.oauth_host.json\""
+    echo "  rm \"$MANIFEST_DIR/com.hanzi_browse.oauth_host.json\""
 done
 echo ""

@@ -113,7 +113,7 @@ export declare function createApiKey(workspaceId: string, name: string): Promise
 export declare function validateApiKey(key: string): Promise<ApiKey | null>;
 export declare function listApiKeys(workspaceId: string): Promise<ApiKey[]>;
 export declare function deleteApiKey(id: string, workspaceId: string): Promise<boolean>;
-export declare function createPairingToken(workspaceId: string, apiKeyId: string, metadata?: {
+export declare function createPairingToken(workspaceId: string, apiKeyId: string | null, metadata?: {
     label?: string;
     externalUserId?: string;
 }): Promise<PairingToken & {

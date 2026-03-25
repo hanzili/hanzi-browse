@@ -9,12 +9,13 @@ export async function api(method, path, body) {
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(BASE + path, opts);
   if (res.status === 401) {
-    await redirectToSignIn();
-    return null;
+    return { status: 401, data: null, unauthorized: true };
   }
   const data = await res.json().catch(() => null);
   return { status: res.status, data };
 }
+
+export { redirectToSignIn };
 
 async function redirectToSignIn() {
   try {

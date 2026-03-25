@@ -821,4 +821,4 @@ window.addEventListener('message', (event) => {
 // Also broadcast once on load (for pages that loaded before the listener was set up)
 window.postMessage({ type: 'HANZI_EXTENSION_READY' }, '*');
 
-console.log('[Hanzi in Chrome] Content script loaded');
+console.log('[Hanzi Browse] Content script loaded');

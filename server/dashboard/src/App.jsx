@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
-import { api } from './api';
+import { api, redirectToSignIn } from './api';
 
 // ─── Utility ─────────────────────────────────────────
 
@@ -39,7 +39,8 @@ export function App() {
   const [pairing, setPairing] = useState(false);
   const [paired, setPaired] = useState(false);
 
-  const loadProfile = useCallback(async () => { const r = await api('GET', '/v1/me'); if (r?.data) setProfile(r.data); }, []);
+  const [needsAuth, setNeedsAuth] = useState(false);
+  const loadProfile = useCallback(async () => { const r = await api('GET', '/v1/me'); if (r?.unauthorized) { setNeedsAuth(true); return; } if (r?.data) setProfile(r.data); }, []);
   const loadKeys = useCallback(async () => { const r = await api('GET', '/v1/api-keys'); if (r) setKeys(r.data?.api_keys || []); }, []);
   const loadSessions = useCallback(async () => { const r = await api('GET', '/v1/browser-sessions'); if (r) setSessions(r.data?.sessions || []); }, []);
   const loadUsage = useCallback(async () => { const r = await api('GET', '/v1/usage'); if (r) setUsage(r.data); }, []);
@@ -67,8 +68,18 @@ export function App() {
 
   if (loading) return <LoadingSkeleton />;
 
+  if (needsAuth) {
+    return (
+      <div class="page" style={{ textAlign: 'center', paddingTop: 80 }}>
+        <h1 style={{ fontSize: 24, marginBottom: 8 }}>Hanzi Dashboard</h1>
+        <p style={{ color: 'var(--muted)', marginBottom: 24 }}>Sign in to manage your workspace.</p>
+        <button class="btn-primary" onClick={redirectToSignIn} style={{ fontSize: 15, padding: '12px 28px' }}>Sign in with Google</button>
+      </div>
+    );
+  }
+
   const firstName = profile?.user?.name?.split(' ')[0] || 'there';
-  const workspaceName = profile?.workspace?.name || 'Your workspace';
+  const workspaceName = profile?.user?.name ? `${profile.user.name}'s workspace` : 'Your workspace';
   const hasKeys = keys.length > 0;
   const connectedSession = sessions.find(s => s.status === 'connected');
   const hasConnected = !!connectedSession || paired;
@@ -172,88 +183,157 @@ function GettingStartedTab({ keys, loadKeys, setError, extensionReady, pairing, 
     setTaskStatus('error'); setTaskAnswer('Timed out after 3 minutes.');
   };
 
+  const [showManualTest, setShowManualTest] = useState(false);
+
+  const INTEGRATION_PROMPT = `Add browser automation to this project using the Hanzi API. Read the codebase first, then ask me:
+
+1. What browser task should Hanzi automate? (e.g. "read patient chart", "fill out a form", "extract data from a web portal")
+2. Where in the UI should the browser pairing flow go? (e.g. settings page, onboarding, a dedicated page)
+3. Where should task results appear? (e.g. inline in the app, a chat interface, a dashboard)
+
+Then build the integration using this API reference:
+
+## Hanzi API (base URL: https://api.hanzilla.co)
+
+Auth: \`Authorization: Bearer ${createdKey || keys[0]?.key_prefix || 'hic_live_...'}\` header on all requests.
+
+### Core flow
+1. Create pairing token → show user a link → they connect their browser
+2. Run tasks against their connected browser → poll for results
+3. Show the answer in your app
+
+### Endpoints
+
+POST /v1/browser-sessions/pair
+  Body: {"label": "User Name", "external_user_id": "your_user_id"}
+  Returns: {"pairing_token": "hic_pair_...", "expires_in_seconds": 300}
+  → Build link: https://api.hanzilla.co/pair/{pairing_token}
+
+GET /v1/browser-sessions
+  Returns: {"sessions": [{"id": "...", "status": "connected", "label": "..."}]}
+
+POST /v1/tasks
+  Body: {"task": "description", "browser_session_id": "...", "url": "optional", "context": "optional"}
+  Returns: {"id": "task_id", "status": "running"}
+  → Poll GET /v1/tasks/:id every 2s until status != "running". Typical: 10-60s.
+
+GET /v1/tasks/:id
+  Returns: {"status": "running|complete|error", "answer": "...", "steps": 4}
+
+POST /v1/tasks/:id/cancel
+
+GET /v1/tasks/:id/steps
+  Returns: {"steps": [{"step": 1, "status": "tool_use", "toolName": "navigate", ...}]}
+
+### Key details
+- 20 free tasks/month, then $0.05/completed task. Errors are free.
+- User needs the Hanzi Chrome extension: https://chromewebstore.google.com/detail/iklpkemlmbhemkiojndpbhoakgikpmcd
+- Sample app: https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart
+
+Read the codebase to understand the stack and project structure, then ask me the 3 questions above. After I answer, build the full integration.`;
+
   return (
     <div>
-      {/* Phase 1: Test it yourself */}
-      <div class="section-label">Test it yourself</div>
-      <p class="section-desc">Try the full flow with your own browser.</p>
-
-      {/* Step 1: API Key */}
-      <div class="card">
-        <div class="step-row">
-          <span class={`step-badge ${hasKeys ? 'done' : 'active'}`}>{hasKeys ? '✓' : '1'}</span>
-          <div class="step-content">
-            <h3>API Key</h3>
-            <p class="step-explain">Authenticates your backend when calling the Hanzi API.</p>
-            {keys.map(k => (
-              <div class="key-row" key={k.id}>
-                <span><strong>{k.name}</strong> <code class="key-prefix">{k.key_prefix}</code></span>
-              </div>
-            ))}
-            {createdKey && (
-              <div class="key-created">
-                <div class="mono-with-copy"><div class="mono">{createdKey}</div><CopyButton text={createdKey} label="Copy key" /></div>
-                <div class="warning">Save this key — it won't be shown again.</div>
-              </div>
-            )}
-            {!hasKeys && (
-              <div class="inline-form">
-                <input value={newKeyName} onInput={e => setNewKeyName(e.target.value)} placeholder="Key name (e.g. dev)" maxLength={100} onKeyDown={e => e.key === 'Enter' && createKey()} />
-                <button class="btn-primary" onClick={createKey} disabled={!newKeyName.trim()}>Create key</button>
-              </div>
-            )}
+      {/* Step 1: API Key (always visible) */}
+      {!hasKeys && (
+        <div class="card">
+          <h3>Create your API key</h3>
+          <p class="step-explain">You need this to call the Hanzi API from your backend.</p>
+          <div class="inline-form">
+            <input value={newKeyName} onInput={e => setNewKeyName(e.target.value)} placeholder="Key name (e.g. dev)" maxLength={100} onKeyDown={e => e.key === 'Enter' && createKey()} />
+            <button class="btn-primary" onClick={createKey} disabled={!newKeyName.trim()}>Create key</button>
           </div>
         </div>
-      </div>
+      )}
+      {createdKey && (
+        <div class="card">
+          <h3>Your API key</h3>
+          <div class="key-created">
+            <div class="mono-with-copy"><div class="mono">{createdKey}</div><CopyButton text={createdKey} label="Copy key" /></div>
+            <div class="warning">Save this key — it won't be shown again.</div>
+          </div>
+          <p class="step-explain" style={{ marginTop: 12 }}>Verify it works:</p>
+          <div class="mono-with-copy" style={{ marginTop: 4 }}>
+            <div class="mono" style={{ fontSize: 11 }}>{`curl ${location.origin}/v1/billing/credits -H "Authorization: Bearer ${createdKey}"`}</div>
+            <CopyButton text={`curl ${location.origin}/v1/billing/credits -H "Authorization: Bearer ${createdKey}"`} label="Copy" />
+          </div>
+        </div>
+      )}
 
-      {/* Step 2: Connect browser */}
+      {/* Build the integration */}
       {hasKeys && (
-        <div class="card">
-          <div class="step-row">
-            <span class={`step-badge ${hasConnected ? 'done' : 'active'}`}>{hasConnected ? '✓' : '2'}</span>
-            <div class="step-content">
-              <h3>{hasConnected ? 'Browser connected' : 'Connect your browser'}</h3>
-              <p class="step-explain">{hasConnected ? 'Your Chrome is paired for testing.' : 'Pair your own Chrome to test tasks in it.'}</p>
-              {!hasConnected && extensionReady && (
-                <button class="btn-primary" onClick={pairBrowser} disabled={pairing}>{pairing ? 'Connecting...' : 'Connect this browser'}</button>
-              )}
-              {!hasConnected && !extensionReady && (
-                <p class="step-explain"><a href="https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank">Install the Hanzi extension</a>, then reload this page.</p>
-              )}
-            </div>
+        <div class="card" style={{ background: '#f5f1e8' }}>
+          <h3>Build the integration</h3>
+          <p class="step-explain">Copy this prompt into Claude Code, Cursor, or any AI coding agent. It has the full API reference and will ask you 3 questions before building.</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button class="btn-primary" onClick={() => { navigator.clipboard.writeText(INTEGRATION_PROMPT); }}
+              style={{ fontSize: 13 }}
+              ref={el => { if (el) el.onclick = () => { navigator.clipboard.writeText(INTEGRATION_PROMPT); el.textContent = 'Copied!'; setTimeout(() => el.textContent = 'Copy integration prompt', 1500); }; }}>
+              Copy integration prompt
+            </button>
+            <a href="/docs.html#build-with-hanzi" class="btn-secondary" style={{ textDecoration: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 13 }}>Read the docs</a>
           </div>
         </div>
       )}
 
-      {/* Step 3: Run task */}
-      {hasKeys && hasConnected && (
-        <div class="card">
-          <div class="step-row">
-            <span class={`step-badge ${testComplete ? 'done' : 'active'}`}>{testComplete ? '✓' : '3'}</span>
-            <div class="step-content">
-              <h3>Run a test task</h3>
-              <p class="step-explain">Tell Hanzi what to do in your connected browser.</p>
-              {!taskStatus ? (
-                <div class="inline-form">
-                  <input value={taskInput} onInput={e => setTaskInput(e.target.value)} placeholder="What should Hanzi do?" onKeyDown={e => e.key === 'Enter' && runTask()} />
-                  <button class="btn-primary" onClick={runTask} disabled={!taskInput.trim()}>Run</button>
+      {/* Ship to users */}
+      {hasKeys && <ShipToUsers />}
+
+      {/* Manual testing (collapsed) */}
+      {hasKeys && (
+        <>
+          <button class="btn-secondary" style={{ marginTop: 28, fontSize: 13, width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: 10 }} onClick={() => setShowManualTest(!showManualTest)}>
+            {showManualTest ? '▾' : '▸'} Test it manually — pair your browser and run a task
+          </button>
+          {showManualTest && (
+            <div>
+              <p class="section-desc">Pair your browser and run a task to see it work.</p>
+
+              <div class="card">
+                <div class="step-row">
+                  <span class={`step-badge ${hasConnected ? 'done' : 'active'}`}>{hasConnected ? '✓' : '1'}</span>
+                  <div class="step-content">
+                    <h3>{hasConnected ? 'Browser connected' : 'Connect your browser'}</h3>
+                    <p class="step-explain">{hasConnected ? 'Your Chrome is paired for testing.' : 'Pair your own Chrome to test tasks in it.'}</p>
+                    {!hasConnected && extensionReady && (
+                      <button class="btn-primary" onClick={pairBrowser} disabled={pairing}>{pairing ? 'Connecting...' : 'Connect this browser'}</button>
+                    )}
+                    {!hasConnected && !extensionReady && (
+                      <p class="step-explain"><a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank">Install the Hanzi extension</a>, then reload this page.</p>
+                    )}
+                  </div>
                 </div>
-              ) : taskStatus === 'running' ? (
-                <div class="task-running"><div class="task-spinner" /><span>Running... ({taskSteps} step{taskSteps !== 1 ? 's' : ''})</span></div>
-              ) : (
-                <div class="task-result">
-                  <div class={`task-status-label ${taskStatus}`}>{taskStatus === 'complete' ? '✓ Complete' : '✗ ' + taskStatus}{taskSteps > 0 && ` · ${taskSteps} steps`}</div>
-                  <div class="task-answer">{taskAnswer}</div>
-                  <button class="btn-secondary" onClick={() => { setTaskStatus(null); setTaskAnswer(''); }} style={{ marginTop: 8 }}>Run another</button>
+              </div>
+
+              {hasConnected && (
+                <div class="card">
+                  <div class="step-row">
+                    <span class={`step-badge ${testComplete ? 'done' : 'active'}`}>{testComplete ? '✓' : '2'}</span>
+                    <div class="step-content">
+                      <h3>Run a test task</h3>
+                      <p class="step-explain">Tell Hanzi what to do in your connected browser.</p>
+                      {!taskStatus ? (
+                        <div class="inline-form">
+                          <input value={taskInput} onInput={e => setTaskInput(e.target.value)} placeholder="What should Hanzi do?" onKeyDown={e => e.key === 'Enter' && runTask()} />
+                          <button class="btn-primary" onClick={runTask} disabled={!taskInput.trim()}>Run</button>
+                        </div>
+                      ) : taskStatus === 'running' ? (
+                        <div class="task-running"><div class="task-spinner" /><span>Running... ({taskSteps} step{taskSteps !== 1 ? 's' : ''})</span></div>
+                      ) : (
+                        <div class="task-result">
+                          <div class={`task-status-label ${taskStatus}`}>{taskStatus === 'complete' ? '✓ Complete' : '✗ ' + taskStatus}{taskSteps > 0 && ` · ${taskSteps} steps`}</div>
+                          <div class="task-answer">{taskAnswer}</div>
+                          <button class="btn-secondary" onClick={() => { setTaskStatus(null); setTaskAnswer(''); }} style={{ marginTop: 8 }}>Run another</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
-
-      {/* Phase 2: Ship to users — only show after first test task */}
-      {testComplete && <ShipToUsers />}
     </div>
   );
 }
@@ -273,37 +353,27 @@ function ShipToUsers() {
 
   return (
     <>
-      <div class="section-label" style={{ marginTop: 28 }}>Ship it to your users</div>
-      <p class="section-desc">Your user clicks a link. Their browser pairs automatically.</p>
+      <div class="section-label" style={{ marginTop: 28 }}>Pair your users</div>
+      <p class="section-desc">Generate a link. Your user clicks it → extension auto-pairs → done.</p>
 
       <div class="card">
-        <h3>Generate a pairing link</h3>
-        <p class="step-explain">Each user gets their own link. They click it → extension auto-pairs → done.</p>
         {!link ? (
-          <button class="btn-primary" onClick={generateLink} disabled={generating} style={{ marginTop: 8 }}>
-            {generating ? 'Generating...' : 'Try it — generate a link'}
-          </button>
+          <div>
+            <p class="step-explain">In production, your backend calls <code>POST /v1/browser-sessions/pair</code> to generate these. Try one now:</p>
+            <button class="btn-primary" onClick={generateLink} disabled={generating} style={{ marginTop: 8 }}>
+              {generating ? 'Generating...' : 'Generate a test pairing link'}
+            </button>
+          </div>
         ) : (
-          <div style={{ marginTop: 8 }}>
+          <div>
             <div class="mono-with-copy"><div class="mono" style={{ fontSize: 12 }}>{link}</div><CopyButton text={link} label="Copy link" /></div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <a href={link} target="_blank" rel="noreferrer" class="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', color: 'white', padding: '6px 14px', borderRadius: 8, fontSize: 13 }}>Open it</a>
               <button class="btn-secondary" onClick={() => setLink(null)} style={{ fontSize: 12 }}>New link</button>
             </div>
-            <p class="step-explain" style={{ marginTop: 8 }}>Expires in 5 minutes. In production, your backend generates one per user via <code>POST /v1/browser-sessions/pair</code>.</p>
+            <p class="step-explain" style={{ marginTop: 8 }}>Expires in 5 minutes. User needs the <a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank">Hanzi extension</a> installed.</p>
           </div>
         )}
-      </div>
-
-      {/* What the user sees */}
-      <div class="card" style={{ background: '#f5f1e8' }}>
-        <h3>What your user sees</h3>
-        <div style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 20, background: 'white', textAlign: 'center', margin: '8px 0' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Connect your browser</div>
-          <div style={{ padding: '10px 16px', background: '#e8f0ec', color: '#2f4a3d', borderRadius: 8, display: 'inline-block', fontWeight: 500, fontSize: 14 }}>✓ Browser connected!</div>
-          <div style={{ fontSize: 13, color: '#6d6256', marginTop: 8 }}>You can close this tab.</div>
-        </div>
-        <p class="step-explain">If the extension isn't installed, they see an "Install" button linking to the Chrome Web Store.</p>
       </div>
     </>
   );
@@ -467,8 +537,8 @@ function SettingsTab({ keys, loadKeys, setError, profile, credits, loadCredits }
         <h3>Resources</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <a href="/docs.html#build-with-hanzi">API Documentation</a>
-          <a href="https://github.com/hanzili/llm-in-chrome/tree/main/examples/partner-quickstart" target="_blank">Sample App (GitHub)</a>
-          <a href="https://github.com/hanzili/llm-in-chrome/tree/main/sdk" target="_blank">SDK Source</a>
+          <a href="https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart" target="_blank">Sample App (GitHub)</a>
+          <a href="https://github.com/hanzili/hanzi-browse/tree/main/sdk" target="_blank">SDK Source</a>
           <a href="https://discord.gg/hahgu5hcA5" target="_blank">Discord Community</a>
         </div>
       </div>

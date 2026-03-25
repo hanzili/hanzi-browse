@@ -1,8 +1,13 @@
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { getToolIcon, getActionDescription, formatStepResult, escapeHtml } from '../utils/format';
 
 export function StepsSection({ steps, pendingStep }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(!!pendingStep);
+
+  // Auto-expand when a step is in progress
+  useEffect(() => {
+    if (pendingStep) setIsExpanded(true);
+  }, [pendingStep]);
 
   const totalSteps = steps.length + (pendingStep ? 1 : 0);
 
@@ -10,9 +15,12 @@ export function StepsSection({ steps, pendingStep }) {
 
   return (
     <div class="steps-section">
-      <div
+      <button
         class={`steps-toggle ${isExpanded ? 'expanded' : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-label={`${steps.length} steps completed${pendingStep ? ', 1 in progress' : ''}. Click to ${isExpanded ? 'collapse' : 'expand'}.`}
+        type="button"
       >
         <div class="toggle-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -27,7 +35,7 @@ export function StepsSection({ steps, pendingStep }) {
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M6 9l6 6 6-6" />
         </svg>
-      </div>
+      </button>
 
       <div class={`steps-list ${isExpanded ? 'visible' : ''}`}>
         {steps.map((step, index) => (

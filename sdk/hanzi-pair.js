@@ -53,7 +53,7 @@
             resolve({
               success: false,
               error: "extension_not_found",
-              installUrl: "https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd",
+              installUrl: "https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd",
             });
           } else {
             doPair();

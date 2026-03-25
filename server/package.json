@@ -1,16 +1,16 @@
 {
-  "name": "hanzi-in-chrome",
+  "name": "hanzi-browse",
   "version": "2.1.4",
   "description": "Give your AI agent a real browser — click, type, fill forms, test workflows, post content, and read authenticated pages",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "hanzili",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hanzili/hanzi-in-chrome.git"
+    "url": "https://github.com/hanzili/hanzi-browse.git"
   },
   "type": "module",
   "bin": {
-    "hanzi-in-chrome": "./dist/index.js",
+    "hanzi-browse": "./dist/index.js",
     "hanzi-browser": "./dist/cli.js",
     "hanzi-relay": "./dist/relay/server.js"
   },

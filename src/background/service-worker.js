@@ -1,5 +1,5 @@
 /**
- * Service Worker - Hanzi in Chrome
+ * Service Worker - Hanzi Browse
  *
  * Orchestrates browser automation by:
  * 1. Receiving tasks from the sidepanel
@@ -42,7 +42,7 @@ import { showAgentIndicators, hideAgentIndicators, hideIndicatorsForToolUse, sho
 import { ensureTabGroup, addTabToGroup, validateTabInGroup, isTabManagedByAgent, registerTabCleanupListener, initTabManager } from './managers/tab-manager.js';
 import {
   initMcpBridge, sendMcpUpdate, sendMcpComplete, sendMcpError, sendMcpScreenshot, queryMemory, sendEscalation,
-  setManagedSession, clearManagedSession, getManagedSessionInfo,
+  setManagedSession, clearManagedSession, getManagedSessionInfo, sendToMcpRelay,
 } from './modules/mcp-bridge.js';
 import { checkAndIncrementUsage, activateLicense, getLicenseStatus, deactivateLicense } from './managers/license-manager.js';
 
@@ -1034,6 +1034,34 @@ ${mcpSession.context}</system-reminder>`,
  * @param {number|null} [tabGroupId] - Optional tab group ID from client (UI manages this)
  * @returns {Promise<Object>} Task result with {success: boolean, message: string}
  */
+/**
+ * Start a task in managed mode — sends task to the managed backend via relay.
+ * The backend runs the agent loop server-side and sends progress updates back
+ * through the relay, which are forwarded to the sidepanel by mcp-bridge.js.
+ */
+function startManagedTask(task, browserSessionId) {
+  const requestId = crypto.randomUUID();
+
+  // Track that we're running a managed task
+  uiSessionState.currentTask = { task, managed: true, requestId };
+
+  const sent = sendToMcpRelay({
+    type: 'create_task',
+    task,
+    browserSessionId,
+    requestId,
+  });
+
+  if (!sent) {
+    // Relay not connected
+    chrome.runtime.sendMessage({
+      type: 'TASK_ERROR',
+      error: 'Not connected to managed service. Check your connection.',
+    }).catch(() => {});
+    uiSessionState.currentTask = null;
+  }
+}
+
 async function startTask(tabId, task, shouldAskBeforeActing = true, images = [], tabGroupId = null) {
   // Reset state for new task (but preserve conversation history)
   // NOTE: tabGroupId is now passed from client, not stored globally
@@ -1157,20 +1185,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (type) {
     case 'START_TASK':
-      checkAndIncrementUsage().then(usage => {
+      checkAndIncrementUsage().then(async (usage) => {
         if (!usage.allowed) {
           sendResponse({ success: false, error: usage.message });
           return;
         }
-        startTask(
-          payload.tabId,
-          payload.task,
-          payload.askBeforeActing !== false,
-          payload.images || [],
-          payload.tabGroupId || null
-        )
-          .then(result => sendResponse({ success: true, result }))
-          .catch(error => sendResponse({ success: false, error: error.message }));
+        // Check if extension is in managed mode
+        const managedInfo = await getManagedSessionInfo();
+        if (managedInfo.isManaged && managedInfo.browserSessionId) {
+          // Managed mode: submit task via relay
+          startManagedTask(payload.task, managedInfo.browserSessionId);
+          sendResponse({ success: true });
+        } else {
+          // BYOM mode: run local agent loop
+          startTask(
+            payload.tabId,
+            payload.task,
+            payload.askBeforeActing !== false,
+            payload.images || [],
+            payload.tabGroupId || null
+          )
+            .then(result => sendResponse({ success: true, result }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        }
       });
       return true;
 
@@ -1998,5 +2035,5 @@ void restoreMcpSessions();
 // Start usage tracking session
 startSession();
 
-console.log('[Hanzi in Chrome] Service worker loaded');
-console.log('[Hanzi in Chrome] MCP bridge initialized');
+console.log('[Hanzi Browse] Service worker loaded');
+console.log('[Hanzi Browse] MCP bridge initialized');

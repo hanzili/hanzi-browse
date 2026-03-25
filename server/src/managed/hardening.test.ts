@@ -418,11 +418,11 @@ async function testAtomicFileWrites() {
 
   // After running store operations, the temp file should NOT exist
   // (it should have been renamed to the final file)
-  const tmpPath = join(homedir(), ".hanzi-in-chrome", "managed", "store.json.tmp");
+  const tmpPath = join(homedir(), ".hanzi-browse", "managed", "store.json.tmp");
   assert(!existsSync(tmpPath), "Temp file does not persist after save");
 
   // The actual store file should exist
-  const storePath = join(homedir(), ".hanzi-in-chrome", "managed", "store.json");
+  const storePath = join(homedir(), ".hanzi-browse", "managed", "store.json");
   assert(existsSync(storePath), "Store file exists after operations");
 }
 

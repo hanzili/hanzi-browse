@@ -46,9 +46,12 @@ export function InputArea({
 
   const handleInput = (e) => {
     setText(e.target.value);
-    // Auto-resize
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+    // Auto-resize in rAF to avoid layout thrashing
+    const target = e.target;
+    requestAnimationFrame(() => {
+      target.style.height = 'auto';
+      target.style.height = Math.min(target.scrollHeight, 150) + 'px';
+    });
   };
 
   const handleDragOver = (e) => {
@@ -127,6 +130,7 @@ export function InputArea({
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           rows={1}
+          aria-label="Task description"
         />
 
         {isRunning ? (

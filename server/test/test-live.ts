@@ -69,7 +69,7 @@ function findNativeHost(): string | null {
   const manifestPath = path.join(
     os.homedir(),
     'Library', 'Application Support', 'Google', 'Chrome',
-    'NativeMessagingHosts', 'com.hanzi_in_chrome.oauth_host.json'
+    'NativeMessagingHosts', 'com.hanzi_browse.oauth_host.json'
   );
 
   if (fs.existsSync(manifestPath)) {

@@ -65,6 +65,9 @@ export function createAuth() {
       },
     },
     basePath: "/api/auth",
+    advanced: {
+      useSecureCookies: true, // Behind Caddy reverse proxy — force consistent __Secure- prefix
+    },
     trustedOrigins: [
       "https://browse.hanzilla.co",
       "https://api.hanzilla.co",
@@ -112,41 +115,40 @@ export function createAuth() {
 /**
  * Resolve a Better Auth session cookie to workspace info.
  * Returns { userId, workspaceId } or null.
- * Used by API endpoints that accept both API keys and session auth.
+ * Uses direct DB lookup (same reason as resolveSessionProfile).
  */
 export async function resolveSessionToWorkspace(
   req: import("http").IncomingMessage
 ): Promise<{ userId: string; workspaceId: string } | null> {
-  const auth = createAuth();
-  if (!auth) return null;
-
   try {
-    // Convert Node req headers to Headers
-    const headers = new Headers();
-    for (const [key, val] of Object.entries(req.headers)) {
-      if (val) headers.set(key, Array.isArray(val) ? val[0] : val);
-    }
+    const cookieHeader = req.headers.cookie || '';
+    const tokenMatch = cookieHeader.match(/better-auth[.\-]session_token=([^;]+)/);
+    if (!tokenMatch) return null;
 
-    const session = await auth.api.getSession({ headers });
-    if (!session?.user?.id) return null;
+    const rawValue = decodeURIComponent(tokenMatch[1]);
+    const token = rawValue.split('.')[0];
+    if (!token) return null;
 
-    // Look up workspace membership
     const db = getProvisionPool();
-    // If the request specifies a workspace via header, use that (for multi-workspace users)
+    const sessionRes = await db.query(
+      `SELECT "userId", "expiresAt" FROM session WHERE token = $1 LIMIT 1`,
+      [token]
+    );
+    if (sessionRes.rows.length === 0) return null;
+    if (new Date(sessionRes.rows[0].expiresAt) < new Date()) return null;
+
+    const userId = sessionRes.rows[0].userId;
     const requestedWs = req.headers["x-workspace-id"] as string | undefined;
 
     const query = requestedWs
       ? "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND workspace_id = $2 LIMIT 1"
       : "SELECT workspace_id FROM workspace_members WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1";
-    const params = requestedWs ? [session.user.id, requestedWs] : [session.user.id];
+    const params = requestedWs ? [userId, requestedWs] : [userId];
 
     const res = await db.query(query, params);
     if (res.rows.length === 0) return null;
 
-    return {
-      userId: session.user.id,
-      workspaceId: res.rows[0].workspace_id,
-    };
+    return { userId, workspaceId: res.rows[0].workspace_id };
   } catch {
     return null;
   }
@@ -155,6 +157,10 @@ export async function resolveSessionToWorkspace(
 /**
  * Resolve session to full profile (user name, email, workspace name).
  * Used by GET /v1/me for the developer console.
+ *
+ * Uses direct DB lookup instead of auth.api.getSession() because
+ * Better Auth's cookie reading fails behind Caddy reverse proxy
+ * (cookie prefix mismatch between set and read paths).
  */
 export async function resolveSessionProfile(
   req: import("http").IncomingMessage
@@ -166,38 +172,56 @@ export async function resolveSessionProfile(
   workspaceName: string;
   plan: string;
 } | null> {
-  const auth = createAuth();
-  if (!auth) return null;
-
   try {
-    const headers = new Headers();
-    for (const [key, val] of Object.entries(req.headers)) {
-      if (val) headers.set(key, Array.isArray(val) ? val[0] : val);
-    }
+    // Extract session token from cookie (handles both __Secure- and plain prefix)
+    const cookieHeader = req.headers.cookie || '';
+    const tokenMatch = cookieHeader.match(/better-auth[.\-]session_token=([^;]+)/);
+    console.error(`[AUTH] step1: match=${!!tokenMatch} cookieLen=${cookieHeader.length}`);
+    if (!tokenMatch) return null;
 
-    const session = await auth.api.getSession({ headers });
-    if (!session?.user?.id) return null;
+    // Token format: "rawToken.signature" — we only need the raw token for DB lookup
+    const rawValue = decodeURIComponent(tokenMatch[1]);
+    const token = rawValue.split('.')[0];
+    console.error(`[AUTH] step2: token=${token.substring(0, 10)}... rawLen=${rawValue.length}`);
+    if (!token) return null;
 
     const db = getProvisionPool();
-    const res = await db.query(
-      `SELECT wm.workspace_id, w.name as workspace_name, w.plan
+    const sessionRes = await db.query(
+      `SELECT s."userId", s."expiresAt", u.name, u.email
+       FROM session s
+       JOIN "user" u ON u.id = s."userId"
+       WHERE s.token = $1 LIMIT 1`,
+      [token]
+    );
+    console.error(`[AUTH] step3: rows=${sessionRes.rows.length}`);
+    if (sessionRes.rows.length === 0) return null;
+
+    const row = sessionRes.rows[0];
+    // Check expiry
+    console.error(`[AUTH] step4: userId=${row.userId} expires=${row.expiresAt} expired=${new Date(row.expiresAt) < new Date()}`);
+    if (new Date(row.expiresAt) < new Date()) return null;
+
+    const wsRes = await db.query(
+      `SELECT wm.workspace_id, w.name as workspace_name
        FROM workspace_members wm
        JOIN workspaces w ON w.id = wm.workspace_id
        WHERE wm.user_id = $1
        ORDER BY wm.created_at ASC LIMIT 1`,
-      [session.user.id]
+      [row.userId]
     );
-    if (res.rows.length === 0) return null;
+    console.error(`[AUTH] step5: wsRows=${wsRes.rows.length}`);
+    if (wsRes.rows.length === 0) return null;
 
     return {
-      userId: session.user.id,
-      workspaceId: res.rows[0].workspace_id,
-      userName: session.user.name || "",
-      userEmail: session.user.email || "",
-      workspaceName: res.rows[0].workspace_name,
-      plan: res.rows[0].plan || "free",
+      userId: row.userId,
+      workspaceId: wsRes.rows[0].workspace_id,
+      userName: row.name || "",
+      userEmail: row.email || "",
+      workspaceName: wsRes.rows[0].workspace_name,
+      plan: "free",
     };
-  } catch {
+  } catch (err: any) {
+    log.error("resolveSessionProfile failed", undefined, { error: err.message });
     return null;
   }
 }

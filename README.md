@@ -1,18 +1,18 @@
-# Your agent stops when it needs a browser. Hanzi lets it keep going.
+# Your agent stops when it needs a browser. Hanzi Browse lets it keep going.
 
-**Hanzi** gives your AI agent your real signed-in browser. One tool call, entire task delegated.
+**Hanzi Browse** gives your AI agent your real signed-in browser. One tool call, entire task delegated.
 
-Works with Claude Code, Cursor, Codex, Windsurf, and more.
+Works with Claude Code, Cursor, Codex, Windsurf, VS Code, Gemini CLI, Amp, Cline, Roo Code, and more.
 
 [![Watch demo](https://img.youtube.com/vi/3tHzg2ps-9w/maxresdefault.jpg)](https://www.youtube.com/watch?v=3tHzg2ps-9w)
 
-## Use Hanzi
+## Get Started
 
 ```bash
-npx hanzi-in-chrome setup
+npx hanzi-browse setup
 ```
 
-Detects your browsers, installs the extension, finds AI agents on your machine, and adds Hanzi to each one. Setup asks how you want to provide the AI:
+One command. Detects your browsers, installs the extension, finds every AI agent on your machine, configures the MCP server, and installs browser skills. Setup asks how you want to provide the AI:
 
 - **Managed** — we handle the AI. 20 free tasks/month, then $0.05/task. No API key needed.
 - **Bring your own model** — use your Claude Pro/Max subscription, GPT Plus, or any API key. Free forever, runs locally.
@@ -26,7 +26,7 @@ Detects your browsers, installs the extension, finds AI agents on your machine, 
 
 **Claude Code:**
 ```bash
-claude mcp add browser -- npx -y hanzi-in-chrome
+claude mcp add browser -- npx -y hanzi-browse
 ```
 
 **Cursor / Windsurf / Others** (mcp.json):
@@ -35,7 +35,7 @@ claude mcp add browser -- npx -y hanzi-in-chrome
   "mcpServers": {
     "browser": {
       "command": "npx",
-      "args": ["-y", "hanzi-in-chrome"]
+      "args": ["-y", "hanzi-browse"]
     }
   }
 }
@@ -48,7 +48,7 @@ claude mcp add browser -- npx -y hanzi-in-chrome
    - Managed: set `HANZI_API_KEY` (get one from [the dashboard](https://api.hanzilla.co/dashboard))
 </details>
 
-## Build with Hanzi
+## Build with Hanzi Browse
 
 Embed browser automation in your product. Your app calls the Hanzi API, a real browser executes the task, you get the result back.
 
@@ -83,15 +83,44 @@ console.log(result.answer);
 "Find AI engineer jobs on LinkedIn in San Francisco"
 ```
 
-## Skills
+## Agent Skills
 
-Reusable workflows. Open source — [add your own](https://github.com/hanzili/llm-in-chrome/tree/main/server/skills).
+Teach your agent *when* and *how* to use the browser. Install the plugin for your agent:
+
+**Claude Code:**
+```bash
+/plugin install hanzi-browse
+```
+
+**Cursor:**
+```bash
+/add-plugin hanzi-browse
+```
+
+**Codex:**
+```bash
+git clone https://github.com/hanzili/hanzi-browse.git ~/.codex/hanzi-browse
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/hanzi-browse/skills ~/.agents/skills/hanzi-browse
+```
+
+**Gemini CLI:**
+```bash
+gemini extensions install https://github.com/hanzili/hanzi-browse
+```
+
+The plugin loads browser automation skills into your agent's context. It includes workflow skills for common tasks:
 
 | Skill | Description |
 |-------|-------------|
-| `linkedin-prospector` | Find prospects, send personalized connection requests |
+| `hanzi-browse` | Core skill — when and how to use browser automation |
 | `e2e-tester` | Test your app in a real browser, report bugs with screenshots |
 | `social-poster` | Draft per-platform posts, publish from your signed-in accounts |
+| `linkedin-prospector` | Find prospects, send personalized connection requests |
+| `a11y-auditor` | Run accessibility audits in a real browser |
+| `x-marketer` | Twitter/X marketing workflows |
+
+Open source — [add your own](https://github.com/hanzili/hanzi-browse/tree/main/server/skills).
 
 ## Tools
 
@@ -119,8 +148,8 @@ Building a product? [Contact us](mailto:hanzili0217@gmail.com?subject=Partner%20
 Prerequisites: [Docker](https://docs.docker.com/get-docker/), Node.js 18+.
 
 ```bash
-git clone https://github.com/hanzili/hanzi-in-chrome
-cd hanzi-in-chrome
+git clone https://github.com/hanzili/hanzi-browse
+cd hanzi-browse
 make dev
 ```
 

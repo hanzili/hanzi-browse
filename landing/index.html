@@ -185,7 +185,7 @@
             max-width: 10ch;
             margin-top: 20px;
             font-size: clamp(3rem, 7vw, 5.2rem);
-            line-height: 0.95;
+            line-height: 1.0;
         }
 
         .hero-copy p {
@@ -215,13 +215,16 @@
         }
 
         .signal-chip {
-            padding: 10px 14px;
+            padding: 12px 16px;
             border: 1px solid var(--line);
             border-radius: 999px;
             background: rgba(255, 253, 248, 0.7);
             color: var(--muted);
             font-size: 13px;
             line-height: 1.4;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
         }
 
         .demo-panel {
@@ -493,6 +496,45 @@
             word-break: break-word;
         }
 
+        .install-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .install-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .install-tab {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .install-tab.active {
+            background: var(--ink);
+            color: #fff;
+        }
+
         .setup-copy {
             position: relative;
             margin-top: 14px;
@@ -559,6 +601,133 @@
             flex-wrap: wrap;
         }
 
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 16px;
+            padding: 8px 16px;
+            background: var(--ink);
+            color: var(--surface);
+            border-radius: 0 0 8px 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 100;
+            transition: top 0.2s;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        a:focus-visible,
+        .btn:focus-visible,
+        .link-pill:focus-visible,
+        .copy-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .video-facade:hover svg circle {
+            fill: rgba(0,0,0,0.75);
+            transition: fill 0.2s;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            html {
+                scroll-behavior: auto;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1714;
+                --surface: #242018;
+                --surface-2: #2e2820;
+                --ink: #e8e0d4;
+                --muted: #9a9088;
+                --line: #3a342a;
+                --accent: #d4845f;
+                --accent-dark: #c07050;
+                --green: #6aaa8a;
+                --purple: #9a8ac0;
+                --shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .setup-copy {
+                background: #141210;
+            }
+
+            .path-step {
+                background: rgba(30, 26, 20, 0.5);
+            }
+
+            .mode-pill {
+                background: rgba(30, 26, 20, 0.5);
+            }
+
+            .prompt-card {
+                background: linear-gradient(180deg, #242018 0%, #1e1a14 100%);
+            }
+
+            .prompt-item {
+                background: rgba(30, 26, 20, 0.58);
+            }
+
+            a.prompt-item:hover {
+                background: rgba(40, 34, 26, 0.78);
+                border-color: #4a4036;
+            }
+
+            .path-step code {
+                background: #2e2820;
+            }
+
+            .cta-band {
+                background: linear-gradient(135deg, #242018 0%, #1e1a14 100%);
+            }
+
+            .stack-card[style*="border-color: var(--accent)"] {
+                border-color: var(--accent);
+            }
+
+            .brand-mark rect {
+                fill: var(--ink);
+            }
+            .brand-mark path {
+                stroke: var(--surface);
+            }
+
+            body {
+                background:
+                    radial-gradient(circle at top left, rgba(100, 80, 50, 0.12), transparent 28%),
+                    radial-gradient(circle at top right, rgba(60, 90, 70, 0.10), transparent 26%),
+                    var(--bg);
+            }
+
+            .stack-card span[style*="background: #fceee4"] {
+                background: rgba(212, 132, 95, 0.2) !important;
+            }
+            .stack-card span[style*="background: #e8f0ec"] {
+                background: rgba(106, 170, 138, 0.2) !important;
+            }
+
+            .step-num-green {
+                background: rgba(106, 170, 138, 0.15);
+            }
+            .step-num-purple {
+                background: rgba(154, 138, 192, 0.15);
+            }
+        }
+
         @media (max-width: 980px) {
             .hero,
             .section-head,
@@ -613,6 +782,7 @@
 </head>
 <body>
     <div class="page">
+        <a class="skip-link" href="#main-content">Skip to content</a>
         <header>
             <a class="brand" href="index.html">
                 <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -621,15 +791,15 @@
                 </svg>
                 Hanzi
             </a>
-            <div class="header-links">
+            <nav class="header-links" aria-label="Main navigation">
                 <a class="link-pill" href="docs.html">Docs</a>
                 <a class="link-pill" href="#pricing">Pricing</a>
-                <a class="link-pill" href="https://discord.gg/hahgu5hcA5" target="_blank" rel="noreferrer">Discord</a>
-                <a class="link-pill" href="https://github.com/hanzili/llm-in-chrome" target="_blank" rel="noreferrer">GitHub</a>
-            </div>
+                <a class="link-pill" href="https://discord.gg/hahgu5hcA5" target="_blank" rel="noreferrer" aria-label="Discord (opens in new tab)">Discord</a>
+                <a class="link-pill" href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer" aria-label="GitHub (opens in new tab)">GitHub</a>
+            </nav>
         </header>
 
-        <main>
+        <main id="main-content">
             <!-- Hero -->
             <section class="hero">
                 <div class="hero-copy">
@@ -639,21 +809,30 @@
                         <a class="btn btn-green" href="#use-hanzi">Use Hanzi</a>
                         <a class="btn btn-purple" href="#build-with-hanzi">Build with Hanzi</a>
                     </div>
-                    <p style="margin-top: 14px; font-size: 14px; color: var(--muted);">Works with Claude Code, Cursor, Codex, Windsurf, and more.</p>
                 </div>
 
                 <div class="demo-panel">
-                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 24px;">
-                        <iframe
-                            src="https://www.youtube.com/embed/3tHzg2ps-9w"
-                            title="Hanzi demo"
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen
-                        ></iframe>
+                    <div class="video-facade" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 24px; cursor: pointer;" onclick="loadVideo(this)" role="button" tabindex="0" aria-label="Play demo video" onkeydown="if(event.key==='Enter')loadVideo(this)">
+                        <img src="https://img.youtube.com/vi/3tHzg2ps-9w/maxresdefault.jpg" alt="Hanzi demo video thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.15);">
+                            <svg width="68" height="68" viewBox="0 0 68 68" fill="none"><circle cx="34" cy="34" r="34" fill="rgba(0,0,0,0.6)"/><polygon points="28,22 28,46 48,34" fill="white"/></svg>
+                        </div>
                     </div>
                 </div>
             </section>
+
+            <div style="display: flex; align-items: center; justify-content: center; gap: 22px; padding: 16px 0 10px; flex-wrap: wrap;">
+                <span style="font-size: 14px; color: var(--muted); font-style: italic;">Works with</span>
+                <img src="logos/cursor-logo-5jxhjn17.png" width="28" height="28" alt="Cursor" title="Cursor" style="opacity: 0.7;">
+                <img src="logos/claude-logo-0p9b6824.png" width="28" height="28" alt="Claude Code" title="Claude Code" style="opacity: 0.7;">
+                <img src="logos/gemini-logo-1f6kvbwc.png" width="24" height="24" alt="Gemini CLI" title="Gemini CLI" style="opacity: 0.7;">
+                <img src="logos/openai-logo-6323x4zd.png" width="24" height="24" alt="Codex CLI" title="Codex CLI" style="opacity: 0.7;">
+                <img src="logos/github-logo-tr9d8349.png" width="24" height="24" alt="VS Code Copilot" title="VS Code Copilot" style="opacity: 0.7;">
+                <img src="logos/antigravity-logo-szj1gjgv.png" width="24" height="24" alt="Antigravity" title="Antigravity" style="opacity: 0.7;">
+                <img src="logos/kiro-logo-wk3s9bcy.png" width="24" height="24" alt="Kiro" title="Kiro" style="opacity: 0.7;">
+                <img src="logos/opencode-logo-svpy0wcb.png" width="24" height="24" alt="OpenCode" title="OpenCode" style="opacity: 0.7;">
+                <img src="logos/pi-logo-g08abpj5.svg" width="24" height="24" alt="Pi" title="Pi" style="opacity: 0.7; background: #1a1a1a; border-radius: 50%; padding: 3px;">
+            </div>
 
             <!-- Use Hanzi -->
             <section class="section" id="use-hanzi">
@@ -667,21 +846,37 @@
 
                 <div class="path-grid">
                     <div class="path-card">
-                        <h3>Get started</h3>
-
-                        <div class="setup-copy" style="margin-bottom: 16px;">
-                            <pre>npx hanzi-in-chrome setup</pre>
-                            <button class="copy-btn" data-copy="npx hanzi-in-chrome setup" onclick="copyData(this)">Copy</button>
+                        <div class="install-header">
+                            <span class="install-label">INSTALL HANZI</span>
+                            <div class="install-tabs">
+                                <button class="install-tab active" onclick="switchInstallTab('terminal', this)">Terminal</button>
+                                <button class="install-tab" onclick="switchInstallTab('agent', this)">AI Agent</button>
+                            </div>
                         </div>
 
-                        <div class="path-steps">
+                        <div id="install-terminal" class="install-panel">
+                            <div class="setup-copy" style="margin-top: 0;">
+                                <pre>npx hanzi-browse setup</pre>
+                                <button class="copy-btn" data-copy="npx hanzi-browse setup" onclick="copyData(this)">Copy</button>
+                            </div>
+                        </div>
+
+                        <div id="install-agent" class="install-panel" style="display: none;">
+                            <div class="setup-copy" style="margin-top: 0;">
+                                <pre style="font-size: 12px; line-height: 1.5;">Install Hanzi Browse. Run `npx hanzi-browse setup` and follow the prompts. This will install the Chrome extension, configure the MCP server, and install browser skills for every agent on this machine.</pre>
+                                <button class="copy-btn" data-copy="Install Hanzi Browse. Run `npx hanzi-browse setup` and follow the prompts. This will install the Chrome extension, configure the MCP server, and install browser skills for every agent on this machine." onclick="copyData(this)">Copy</button>
+                            </div>
+                            <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Paste this into Claude Code, Cursor, Codex, or any AI coding agent.</p>
+                        </div>
+
+                        <div class="path-steps" style="margin-top: 16px;">
                             <div class="path-step">
                                 <span class="step-num step-num-green">1</span>
                                 Installs the Chrome extension
                             </div>
                             <div class="path-step">
                                 <span class="step-num step-num-green">2</span>
-                                Configures your AI agent (MCP)
+                                Configures MCP server + browser skills
                             </div>
                             <div class="path-step">
                                 <span class="step-num step-num-green">3</span>
@@ -717,7 +912,7 @@
                                 <code>Draft posts and publish from your real signed-in accounts.</code>
                             </div>
                         </div>
-                        <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">Open source skills — <a href="https://github.com/hanzili/llm-in-chrome/tree/main/server/skills" target="_blank" rel="noreferrer" style="color: var(--accent-dark); font-weight: 600;">add your own</a>.</p>
+                        <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">Open source skills — <a href="https://github.com/hanzili/hanzi-browse/tree/main/server/skills" target="_blank" rel="noreferrer" style="color: var(--accent-dark); font-weight: 600;" aria-label="add your own (opens in new tab)">add your own</a>.</p>
 
                         <h3 style="margin-top: 20px;">Or your agent just uses it.</h3>
                         <div class="prompt-list" style="margin-top: 12px;">
@@ -751,7 +946,7 @@
                         <div class="path-steps">
                             <div class="path-step">
                                 <span class="step-num step-num-purple">1</span>
-                                <a href="https://api.hanzilla.co/api/auth/sign-in/social" target="_blank" rel="noreferrer" style="color: inherit; font-weight: 600;">Sign in</a> and create an API key
+                                <a href="https://api.hanzilla.co/api/auth/sign-in/social" target="_blank" rel="noreferrer" style="color: inherit; font-weight: 600;" aria-label="Sign in (opens in new tab)">Sign in</a> and create an API key
                             </div>
                             <div class="path-step">
                                 <span class="step-num step-num-purple">2</span>
@@ -764,7 +959,7 @@
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;">
                             <a class="btn btn-purple" href="docs.html#build-with-hanzi">Developer guide</a>
-                            <a class="btn" href="https://github.com/hanzili/llm-in-chrome/tree/main/examples/partner-quickstart" target="_blank" rel="noreferrer" style="border-color: var(--purple); color: var(--purple);">Sample app</a>
+                            <a class="btn" href="https://github.com/hanzili/hanzi-browse/tree/main/examples/partner-quickstart" target="_blank" rel="noreferrer" style="border-color: var(--purple); color: var(--purple);" aria-label="Sample app (opens in new tab)">Sample app</a>
                         </div>
                         <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">Need volume pricing? <a href="mailto:hanzili0217@gmail.com?subject=Partner%20pricing" style="color: var(--purple); font-weight: 600;">Talk to us</a>.</p>
                     </div>
@@ -783,7 +978,7 @@ const { pairingToken } = await client.createPairingToken();
 
 // Run a task
 const result = await client.runTask({
-  browserSessionId: session.id,
+  browserSessionId: 'bsn_...',
   task: 'Read the patient chart on this page',
 });
 
@@ -802,7 +997,7 @@ console.log(result.answer);</pre>
                     </div>
                     <p>Only charged for completed tasks. Errors and timeouts are always free.</p>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px;">
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 700px; margin: 0 auto;">
                     <div class="stack-card" style="padding: 22px; border-color: var(--accent);">
                         <span style="display: inline-block; margin-bottom: 10px; padding: 4px 10px; border-radius: 999px; background: #fceee4; color: var(--accent-dark); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;">Managed</span>
                         <h3 style="font-size: 28px; font-family: 'Iowan Old Style', Georgia, serif; margin-bottom: 4px;">$0.05 <span style="font-size: 14px; font-weight: 400; color: var(--muted);">/ task</span></h3>
@@ -837,8 +1032,8 @@ console.log(result.answer);</pre>
                         <p>Or <a href="docs.html#build-with-hanzi" style="color: var(--purple); font-weight: 700;">read the developer guide</a> to embed Hanzi in your product.</p>
                     </div>
                     <div class="setup-copy">
-                        <pre>npx hanzi-in-chrome setup</pre>
-                        <button class="copy-btn" data-copy="npx hanzi-in-chrome setup" onclick="copyData(this)">Copy</button>
+                        <pre>npx hanzi-browse setup</pre>
+                        <button class="copy-btn" data-copy="npx hanzi-browse setup" onclick="copyData(this)">Copy</button>
                     </div>
                 </div>
             </section>
@@ -847,12 +1042,12 @@ console.log(result.answer);</pre>
         <footer>
             <div>Give your AI agent a real browser.</div>
             <div class="footer-links">
-                <a href="https://github.com/hanzili/llm-in-chrome" target="_blank" rel="noreferrer">GitHub</a>
-                <a href="https://discord.gg/hahgu5hcA5" target="_blank" rel="noreferrer">Discord</a>
-                <a href="https://www.npmjs.com/package/hanzi-in-chrome" target="_blank" rel="noreferrer">npm</a>
-                <a href="https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank" rel="noreferrer">Chrome Web Store</a>
-                <a href="https://x.com/hanzi_li" target="_blank" rel="noreferrer">Twitter</a>
-                <a href="https://www.linkedin.com/in/hanzi-li-mcgill/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer" aria-label="GitHub (opens in new tab)">GitHub</a>
+                <a href="https://discord.gg/hahgu5hcA5" target="_blank" rel="noreferrer" aria-label="Discord (opens in new tab)">Discord</a>
+                <a href="https://www.npmjs.com/package/hanzi-browse" target="_blank" rel="noreferrer" aria-label="npm (opens in new tab)">npm</a>
+                <a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank" rel="noreferrer" aria-label="Chrome Web Store (opens in new tab)">Chrome Web Store</a>
+                <a href="https://x.com/hanzi_li" target="_blank" rel="noreferrer" aria-label="Twitter (opens in new tab)">Twitter</a>
+                <a href="https://www.linkedin.com/in/hanzi-li-mcgill/" target="_blank" rel="noreferrer" aria-label="LinkedIn (opens in new tab)">LinkedIn</a>
                 <a href="docs.html">Docs</a>
                 <a href="#pricing">Pricing</a>
                 <a href="mailto:hanzili0217@gmail.com">Contact</a>
@@ -861,6 +1056,13 @@ console.log(result.answer);</pre>
     </div>
 
     <script>
+        function switchInstallTab(tab, btn) {
+            document.getElementById('install-terminal').style.display = tab === 'terminal' ? '' : 'none';
+            document.getElementById('install-agent').style.display = tab === 'agent' ? '' : 'none';
+            btn.parentElement.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
         function copyData(button) {
             navigator.clipboard.writeText(button.dataset.copy || '');
             const original = button.textContent;
@@ -868,6 +1070,15 @@ console.log(result.answer);</pre>
             setTimeout(() => {
                 button.textContent = original;
             }, 1500);
+        }
+
+        function loadVideo(el) {
+            el.innerHTML = '<iframe src="https://www.youtube.com/embed/3tHzg2ps-9w?autoplay=1" title="Hanzi demo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            el.style.cursor = 'default';
+            el.removeAttribute('onclick');
+            el.removeAttribute('onkeydown');
+            el.removeAttribute('role');
+            el.removeAttribute('tabindex');
         }
     </script>
 </body>

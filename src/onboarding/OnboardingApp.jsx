@@ -197,11 +197,11 @@ export function OnboardingApp() {
           {!isReady && (
             <div class="connect-section">
               <div class="command-block" style={{ margin: '0' }}>
-                <code>npx hanzi-in-chrome setup</code>
+                <code>npx hanzi-browse setup</code>
                 <button
                   class="copy-btn"
                   onClick={() => {
-                    navigator.clipboard.writeText('npx hanzi-in-chrome setup');
+                    navigator.clipboard.writeText('npx hanzi-browse setup');
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}

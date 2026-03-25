@@ -4,8 +4,9 @@
  * Scans the machine for Claude Code, Cursor, Windsurf, and Claude Desktop,
  * then merges the Hanzi MCP server entry into each agent's config file.
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { homedir, platform } from 'os';
 import { execSync } from 'child_process';
 import { createInterface } from 'readline';
@@ -60,33 +61,38 @@ function spinner(text, isInteractive = true) {
 // ── MCP config payload ─────────────────────────────────────────────────
 const MCP_ENTRY = {
     command: 'npx',
-    args: ['-y', 'hanzi-in-chrome'],
+    args: ['-y', 'hanzi-browse'],
 };
 // ── Agent registry ─────────────────────────────────────────────────────
 function getAgentRegistry() {
     const home = homedir();
     const plat = platform();
+    const hasCli = (bin) => {
+        try {
+            execSync(`which ${bin}`, { stdio: 'ignore' });
+            return true;
+        }
+        catch {
+            return false;
+        }
+    };
     return [
+        // ── Agents with CLI-based MCP setup ──
         {
             name: 'Claude Code',
             slug: 'claude-code',
             method: 'cli-command',
-            cliCommand: 'claude mcp add browser -- npx -y hanzi-in-chrome',
-            detect: () => {
-                try {
-                    execSync('which claude', { stdio: 'ignore' });
-                    return true;
-                }
-                catch {
-                    return false;
-                }
-            },
+            cliCommand: 'claude mcp add browser -- npx -y hanzi-browse',
+            skillsDir: () => join(home, '.claude', 'skills'),
+            detect: () => hasCli('claude'),
         },
+        // ── Agents with JSON config merge ──
         {
             name: 'Cursor',
             slug: 'cursor',
             method: 'json-merge',
             configPath: () => join(home, '.cursor', 'mcp.json'),
+            skillsDir: () => join(home, '.cursor', 'skills'),
             detect: () => existsSync(join(home, '.cursor')),
         },
         {
@@ -94,7 +100,24 @@ function getAgentRegistry() {
             slug: 'windsurf',
             method: 'json-merge',
             configPath: () => join(home, '.codeium', 'windsurf', 'mcp_config.json'),
+            skillsDir: () => join(home, '.codeium', 'windsurf', 'skills'),
             detect: () => existsSync(join(home, '.codeium', 'windsurf')),
+        },
+        {
+            name: 'VS Code',
+            slug: 'vscode',
+            method: 'json-merge',
+            configPath: () => join(home, '.vscode', 'mcp.json'),
+            skillsDir: () => join(home, '.vscode', 'skills'),
+            detect: () => existsSync(join(home, '.vscode')),
+        },
+        {
+            name: 'Codex',
+            slug: 'codex',
+            method: 'json-merge',
+            configPath: () => join(home, '.codex', 'mcp.json'),
+            skillsDir: () => join(home, '.agents', 'skills'),
+            detect: () => existsSync(join(home, '.codex')) || hasCli('codex'),
         },
         {
             name: 'Claude Desktop',
@@ -114,6 +137,36 @@ function getAgentRegistry() {
                     return existsSync(join(process.env.APPDATA || join(home, 'AppData', 'Roaming'), 'Claude'));
                 return existsSync(join(home, '.config', 'Claude'));
             },
+        },
+        {
+            name: 'Gemini CLI',
+            slug: 'gemini',
+            method: 'json-merge',
+            configPath: () => join(home, '.gemini', 'settings.json'),
+            skillsDir: () => join(home, '.gemini', 'skills'),
+            detect: () => existsSync(join(home, '.gemini')) || hasCli('gemini'),
+        },
+        {
+            name: 'Amp',
+            slug: 'amp',
+            method: 'json-merge',
+            configPath: () => join(home, '.amp', 'mcp.json'),
+            skillsDir: () => join(home, '.amp', 'skills'),
+            detect: () => existsSync(join(home, '.amp')),
+        },
+        {
+            name: 'Cline',
+            slug: 'cline',
+            method: 'json-merge',
+            configPath: () => join(home, '.cline', 'mcp_settings.json'),
+            detect: () => existsSync(join(home, '.cline')),
+        },
+        {
+            name: 'Roo Code',
+            slug: 'roo-code',
+            method: 'json-merge',
+            configPath: () => join(home, '.roo-code', 'mcp_settings.json'),
+            detect: () => existsSync(join(home, '.roo-code')),
         },
     ];
 }
@@ -170,7 +223,7 @@ function mergeJsonConfig(configPath) {
 }
 function runClaudeCodeSetup() {
     try {
-        const output = execSync('claude mcp add browser -- npx -y hanzi-in-chrome', {
+        const output = execSync('claude mcp add browser -- npx -y hanzi-browse', {
             encoding: 'utf-8',
             stdio: ['pipe', 'pipe', 'pipe'],
             timeout: 10000,
@@ -189,7 +242,7 @@ function runClaudeCodeSetup() {
     }
 }
 // ── Browser detection ──────────────────────────────────────────────────
-const EXTENSION_URL = 'https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd';
+const EXTENSION_URL = 'https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd';
 const BROWSERS = [
     { name: 'Google Chrome', slug: 'chrome', macApp: 'Google Chrome', linuxBin: 'google-chrome' },
     { name: 'Brave', slug: 'brave', macApp: 'Brave Browser', linuxBin: 'brave-browser' },
@@ -450,7 +503,7 @@ async function injectManagedKey(apiKey, agents) {
                     execSync('claude mcp remove browser', { stdio: 'ignore' });
                 }
                 catch { }
-                execSync(`claude mcp add browser -e HANZI_API_KEY=${apiKey} -- npx -y hanzi-in-chrome`, {
+                execSync(`claude mcp add browser -e HANZI_API_KEY=${apiKey} -- npx -y hanzi-browse`, {
                     stdio: 'ignore',
                 });
                 console.log(`     ${c.green('✓')}  Updated Claude Code with managed API key`);
@@ -569,6 +622,75 @@ function disconnectRelay() {
         relay.disconnect();
         relay = null;
         setTimeout(() => { console.error = origError; }, 500);
+    }
+}
+// ── Skill installation ──────────────────────────────────────────────────
+function getSkillsSource() {
+    // Skills are bundled in the npm package at ../skills/ relative to dist/cli/
+    const fromDist = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills');
+    if (existsSync(fromDist))
+        return fromDist;
+    // Fallback: running from source at src/cli/
+    const fromSrc = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills');
+    return fromSrc;
+}
+const SKILL_NAMES = ['hanzi-browse', 'e2e-tester', 'social-poster', 'linkedin-prospector', 'a11y-auditor', 'x-marketer'];
+async function installSkills(agents, isInteractive) {
+    const skillsSource = getSkillsSource();
+    if (!existsSync(skillsSource))
+        return; // No skills bundled
+    const agentsWithSkills = agents.filter(a => a.skillsDir);
+    if (agentsWithSkills.length === 0)
+        return;
+    const out = isInteractive ? console.log : log;
+    if (isInteractive) {
+        console.log('');
+        console.log(`  ${c.dim('       Installing browser automation skills...')}`);
+    }
+    else {
+        log('\n     Installing skills...');
+    }
+    let installed = 0;
+    for (const agent of agentsWithSkills) {
+        const targetDir = agent.skillsDir();
+        try {
+            for (const skillName of SKILL_NAMES) {
+                const src = join(skillsSource, skillName);
+                if (!existsSync(src))
+                    continue;
+                const dest = join(targetDir, skillName);
+                mkdirSync(dest, { recursive: true });
+                // Copy SKILL.md and any supporting files
+                const files = readdirSync(src);
+                for (const file of files) {
+                    copyFileSync(join(src, file), join(dest, file));
+                }
+            }
+            installed++;
+            if (isInteractive) {
+                console.log(`     ${c.green('✓')}  ${agent.name.padEnd(16)} ${c.dim(targetDir)}`);
+            }
+            else {
+                log(`     ✓  ${agent.name} (${targetDir})`);
+            }
+        }
+        catch (err) {
+            if (isInteractive) {
+                console.log(`     ${c.yellow('●')}  ${agent.name.padEnd(16)} ${c.dim(err.message)}`);
+            }
+            else {
+                log(`     ●  ${agent.name} — ${err.message}`);
+            }
+        }
+    }
+    if (installed > 0) {
+        const msg = `${installed} agent${installed === 1 ? '' : 's'} got ${SKILL_NAMES.length} browser skills`;
+        if (isInteractive) {
+            console.log(`\n     ${c.green('✓')}  ${msg}`);
+        }
+        else {
+            log(`     ✓  ${msg}`);
+        }
     }
 }
 // ── Main ───────────────────────────────────────────────────────────────
@@ -703,6 +825,8 @@ export async function runSetup(options = {}) {
             log(`     ${result.status === 'error' ? '✗' : result.status === 'configured' ? '✓' : '●'}  ${result.agent} — ${status}`);
         }
     }
+    // ── Step 2b: Install skills ──
+    await installSkills(detected, interactive);
     // ── Step 3: Access mode ──
     let accessMode = 'byom';
     if (interactive) {

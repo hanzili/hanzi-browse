@@ -1,12 +1,12 @@
 {
-  "name": "hanzi-in-chrome",
+  "name": "hanzi-browse",
   "version": "1.0.0",
   "description": "Open-source browser automation powered by any LLM",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "hanzili",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hanzili/hanzi-in-chrome.git"
+    "url": "https://github.com/hanzili/hanzi-browse.git"
   },
   "private": true,
   "type": "module",

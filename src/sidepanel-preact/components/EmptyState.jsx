@@ -5,9 +5,9 @@ const HUMAN_EXAMPLES = [
 ];
 
 const AGENT_EXAMPLES = [
-  'Search for recent AI news',
+  'Check the staging deployment for errors',
   'Fill out this form with my details',
-  'Find the best price for...',
+  'Read the docs and summarize the setup steps',
 ];
 
 export function EmptyState({ onSelectExample, primaryMode }) {
@@ -16,13 +16,13 @@ export function EmptyState({ onSelectExample, primaryMode }) {
   return (
     <div class="empty-state">
       <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="24" rx="6" fill="currentColor" />
+          <path d="M7 7v10M17 7v10M7 12h10" stroke="var(--bg-primary)" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
       </div>
-      <h2>Hanzi in Chrome</h2>
-      <p>Describe what you want to accomplish and the AI will browse autonomously to complete your task.</p>
+      <h2>What should we browse?</h2>
+      <p>Tell Hanzi what to do and it will take over the browser.</p>
       <div class="empty-examples">
         {examples.map((example, i) => (
           <button

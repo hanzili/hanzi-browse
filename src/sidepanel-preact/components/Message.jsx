@@ -21,7 +21,7 @@ export function Message({ message }) {
 
   if (type === 'streaming') {
     return (
-      <div class="message assistant streaming">
+      <div class="message assistant streaming" aria-live="polite" aria-atomic="false">
         <div class="bullet" />
         <div
           class="content"

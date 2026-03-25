@@ -1,53 +1,69 @@
 import { useState, useEffect } from 'preact/hooks';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { PROVIDERS } from '../config/providers';
 
 export function SettingsModal({ config, onClose }) {
   const [activeTab, setActiveTab] = useState('providers');
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [localKeys, setLocalKeys] = useState({ ...config.providerKeys });
-  const [agentDefaultIndex, setAgentDefaultIndex] = useState(config.currentAgentDefaultIndex);
   const [newCustomModel, setNewCustomModel] = useState({ name: '', baseUrl: '', modelId: '', apiKey: '' });
   const [skillForm, setSkillForm] = useState({ domain: '', skill: '', isOpen: false, editIndex: -1 });
+  const [formError, setFormError] = useState('');
   const [managedStatus, setManagedStatus] = useState(null);
+  const trapRef = useFocusTrap(true);
 
+  // Close on Escape
   useEffect(() => {
-    setAgentDefaultIndex(config.currentAgentDefaultIndex);
-  }, [config.currentAgentDefaultIndex]);
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
+  // Check if this browser is paired to a workspace
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'GET_MANAGED_STATUS' }, (res) => {
       if (res) setManagedStatus(res);
     });
+    // Auto-detect pairing changes (e.g. user paired in another tab)
+    const listener = (changes) => {
+      if (changes.managed_session_token) {
+        chrome.runtime.sendMessage({ type: 'GET_MANAGED_STATUS' }, (res) => {
+          if (res) setManagedStatus(res);
+        });
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
   const handleSave = async () => {
-    // Update provider keys
     for (const [provider, key] of Object.entries(localKeys)) {
       if (key !== config.providerKeys[provider]) {
         config.setProviderKey(provider, key);
       }
     }
     await config.saveConfig();
-    if (agentDefaultIndex !== config.currentAgentDefaultIndex && agentDefaultIndex >= 0) {
-      await config.selectAgentDefault(agentDefaultIndex);
-    }
     onClose();
   };
 
   const handleAddCustomModel = () => {
     if (!newCustomModel.name || !newCustomModel.baseUrl || !newCustomModel.modelId) {
-      alert('Please fill in name, base URL, and model ID');
+      setFormError('Please fill in name, base URL, and model ID');
       return;
     }
+    setFormError('');
     config.addCustomModel({ ...newCustomModel });
     setNewCustomModel({ name: '', baseUrl: '', modelId: '', apiKey: '' });
   };
 
   const handleAddSkill = () => {
     if (!skillForm.domain || !skillForm.skill) {
-      alert('Please fill in both domain and tips/guidance');
+      setFormError('Please fill in both domain and tips/guidance');
       return;
     }
+    setFormError('');
     config.addUserSkill({ domain: skillForm.domain.toLowerCase(), skill: skillForm.skill });
     setSkillForm({ domain: '', skill: '', isOpen: false, editIndex: -1 });
   };
@@ -57,12 +73,52 @@ export function SettingsModal({ config, onClose }) {
     setSkillForm({ domain: skill.domain, skill: skill.skill, isOpen: true, editIndex: index });
   };
 
+  const isPaired = managedStatus?.isManaged;
+
+  // Mode 2: Paired to managed service — clean user-friendly view
+  if (isPaired) {
+    const handleDisconnect = () => {
+      chrome.runtime.sendMessage({ type: 'MANAGED_DISCONNECT' }, () => {
+        setManagedStatus({ isManaged: false, browserSessionId: null });
+      });
+    };
+
+    return (
+      <div class="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div class="modal settings-modal" role="dialog" aria-modal="true" aria-label="Settings" ref={trapRef}>
+          <div class="modal-header">
+            <span>Settings</span>
+            <button class="close-btn" onClick={onClose} aria-label="Close settings">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="provider-section">
+              <div class="connected-status">
+                <span class="status-badge connected">Connected</span>
+                <span style={{ fontSize: '14px', marginLeft: '8px' }}>Hanzi Managed</span>
+              </div>
+              <p class="provider-desc" style={{ marginTop: '12px' }}>
+                Your browser is connected to Hanzi's managed AI service. Tasks you run in the sidepanel use your managed account.
+              </p>
+              <button class="btn btn-secondary btn-sm" onClick={handleDisconnect} style={{ marginTop: '8px' }}>
+                Disconnect
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" onClick={onClose}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mode 1: Direct user — show connections + site tips
   return (
     <div class="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div class="modal settings-modal">
+      <div class="modal settings-modal" role="dialog" aria-modal="true" aria-label="Settings" ref={trapRef}>
         <div class="modal-header">
           <span>Settings</span>
-          <button class="close-btn" onClick={onClose}>&times;</button>
+          <button class="close-btn" onClick={onClose} aria-label="Close settings">&times;</button>
         </div>
 
         <div class="tabs">
@@ -70,58 +126,28 @@ export function SettingsModal({ config, onClose }) {
             class={`tab ${activeTab === 'providers' ? 'active' : ''}`}
             onClick={() => setActiveTab('providers')}
           >
-            Providers
-          </button>
-          <button
-            class={`tab ${activeTab === 'custom' ? 'active' : ''}`}
-            onClick={() => setActiveTab('custom')}
-          >
-            Custom Models
+            Connections
           </button>
           <button
             class={`tab ${activeTab === 'skills' ? 'active' : ''}`}
             onClick={() => setActiveTab('skills')}
           >
-            Domain Skills
-          </button>
-          <button
-            class={`tab ${activeTab === 'managed' ? 'active' : ''}`}
-            onClick={() => setActiveTab('managed')}
-          >
-            Managed
-            {managedStatus && (
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%', display: 'inline-block', marginLeft: 4,
-                background: managedStatus.isManaged ? '#2f4a3d' : '#ccc',
-              }} />
-            )}
+            Site Tips
           </button>
         </div>
 
         <div class="modal-body">
-          {activeTab === 'managed' && (
-            <ManagedTab />
-          )}
-
           {activeTab === 'providers' && (
-            <ProvidersTab
+            <ConnectionsTab
               localKeys={localKeys}
               setLocalKeys={setLocalKeys}
               selectedProvider={selectedProvider}
               setSelectedProvider={setSelectedProvider}
-              agentDefaultIndex={agentDefaultIndex}
-              setAgentDefaultIndex={setAgentDefaultIndex}
               config={config}
-            />
-          )}
-
-          {activeTab === 'custom' && (
-            <CustomModelsTab
-              customModels={config.customModels}
-              newModel={newCustomModel}
-              setNewModel={setNewCustomModel}
-              onAdd={handleAddCustomModel}
-              onRemove={config.removeCustomModel}
+              newCustomModel={newCustomModel}
+              setNewCustomModel={setNewCustomModel}
+              onAddCustomModel={handleAddCustomModel}
+              formError={formError}
             />
           )}
 
@@ -134,9 +160,9 @@ export function SettingsModal({ config, onClose }) {
               onAdd={handleAddSkill}
               onEdit={handleEditSkill}
               onRemove={config.removeUserSkill}
+              formError={formError}
             />
           )}
-
         </div>
 
         <div class="modal-footer">
@@ -148,21 +174,41 @@ export function SettingsModal({ config, onClose }) {
   );
 }
 
-function ProvidersTab({
+function ConnectionsTab({
   localKeys,
   setLocalKeys,
   selectedProvider,
   setSelectedProvider,
-  agentDefaultIndex,
-  setAgentDefaultIndex,
-  config
+  config,
+  newCustomModel,
+  setNewCustomModel,
+  onAddCustomModel,
+  formError,
 }) {
   return (
     <div class="tab-content">
+      {/* Managed service */}
+      <div class="provider-section">
+        <h4>Hanzi Managed</h4>
+        <p class="provider-desc">We handle the AI. 20 free tasks/month, then $0.05/task. No API key needed.</p>
+        <a class="btn btn-primary" href="https://api.hanzilla.co/pair-self" target="_blank" rel="noreferrer"
+          style={{ textDecoration: 'none' }}>
+          Sign in &amp; connect
+        </a>
+      </div>
+
+      <hr />
+
+      {/* BYOM section */}
+      <div class="provider-section">
+        <h4>Bring your own model</h4>
+        <p class="provider-desc">Use your existing AI subscription. Free forever.</p>
+      </div>
+
       {/* Import Claude credentials */}
       <div class="provider-section">
-        <h4>Import Claude credentials</h4>
-        <p class="provider-desc">Import from <code>claude login</code> to use your Claude Pro/Max subscription. <a href="https://github.com/hanzili/hanzi-in-chrome#claude-code-plan-setup" target="_blank">Setup guide</a></p>
+        <h4>Claude</h4>
+        <p class="provider-desc">Use your Claude Pro/Max subscription via <code>claude login</code></p>
         {config.oauthStatus.isAuthenticated ? (
           <div class="connected-status">
             <span class="status-badge connected">Connected</span>
@@ -175,8 +221,8 @@ function ProvidersTab({
 
       {/* Import Codex credentials */}
       <div class="provider-section">
-        <h4>Import Codex credentials</h4>
-        <p class="provider-desc">Import from <code>codex login</code> to use your ChatGPT Pro/Plus subscription. <a href="https://github.com/hanzili/hanzi-in-chrome#codex-plan-setup" target="_blank">Setup guide</a></p>
+        <h4>Codex</h4>
+        <p class="provider-desc">Use your ChatGPT Pro/Plus subscription via <code>codex login</code></p>
         {config.codexStatus.isAuthenticated ? (
           <div class="connected-status">
             <span class="status-badge connected">Connected</span>
@@ -190,7 +236,7 @@ function ProvidersTab({
       <hr />
 
       {/* API Keys */}
-      <h4>API Keys (Pay-per-use)</h4>
+      <h4>API Keys</h4>
       <div class="provider-cards">
         {Object.entries(PROVIDERS).map(([id, provider]) => (
           <div
@@ -226,106 +272,47 @@ function ProvidersTab({
         </div>
       )}
 
-      <hr />
-
-      <div class="provider-section">
-        <h4>browser automation default</h4>
-        <p class="provider-desc">
-          used by <code>hanzi-browser</code> and mcp browser tasks.
-          the sidepanel model is still selected from the header.
-        </p>
-        <div class="api-key-input">
-          <label>default model for cli / mcp</label>
-          <select
-            value={agentDefaultIndex >= 0 ? String(agentDefaultIndex) : ''}
-            onChange={(e) => setAgentDefaultIndex(Number(e.target.value))}
-            disabled={config.availableModels.length === 0}
-          >
-            {config.availableModels.length === 0 ? (
-              <option value="">connect a model source first</option>
-            ) : (
-              config.availableModels.map((model, index) => (
-                <option key={`${model.provider}-${model.modelId}-${index}`} value={String(index)}>
-                  {model.name}
-                </option>
-              ))
-            )}
-          </select>
+      {/* Custom endpoints — collapsed */}
+      <details class="advanced-section" style={{ marginTop: '16px' }}>
+        <summary>Custom endpoint (Ollama, LM Studio, etc.)</summary>
+        <div class="custom-model-form" style={{ marginTop: '12px' }}>
+          <input type="text" placeholder="Display Name" value={newCustomModel.name}
+            onInput={(e) => setNewCustomModel({ ...newCustomModel, name: e.target.value })} />
+          <input type="text" placeholder="Base URL (e.g. http://localhost:11434/v1)" value={newCustomModel.baseUrl}
+            onInput={(e) => setNewCustomModel({ ...newCustomModel, baseUrl: e.target.value })} />
+          <input type="text" placeholder="Model ID" value={newCustomModel.modelId}
+            onInput={(e) => setNewCustomModel({ ...newCustomModel, modelId: e.target.value })} />
+          <input type="password" placeholder="API Key (optional)" value={newCustomModel.apiKey}
+            onInput={(e) => setNewCustomModel({ ...newCustomModel, apiKey: e.target.value })} />
+          {formError && <p class="provider-desc" style={{ color: 'var(--color-error)', marginBottom: '8px' }}>{formError}</p>}
+          <button class="btn btn-primary" onClick={onAddCustomModel}
+            disabled={!newCustomModel.name || !newCustomModel.baseUrl || !newCustomModel.modelId}>
+            Add
+          </button>
         </div>
-      </div>
-
-      <hr />
-
-      {/* MCP Server Integration */}
-      <div class="provider-section">
-        <h4>MCP Server</h4>
-        <p class="provider-desc">
-          Control this browser from Claude Code or any MCP client.{' '}
-          <a href="https://github.com/hanzili/hanzi-in-chrome#setup" target="_blank">Setup guide</a>
-        </p>
-        <code class="install-cmd">npm install -g hanzi-in-chrome</code>
-      </div>
-    </div>
-  );
-}
-
-function CustomModelsTab({ customModels, newModel, setNewModel, onAdd, onRemove }) {
-  return (
-    <div class="tab-content">
-      <p class="tab-desc">Add custom OpenAI-compatible endpoints</p>
-
-      <div class="custom-model-form">
-        <input
-          type="text"
-          placeholder="Display Name"
-          value={newModel.name}
-          onInput={(e) => setNewModel({ ...newModel, name: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Base URL (e.g., https://api.example.com/v1/chat/completions)"
-          value={newModel.baseUrl}
-          onInput={(e) => setNewModel({ ...newModel, baseUrl: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Model ID"
-          value={newModel.modelId}
-          onInput={(e) => setNewModel({ ...newModel, modelId: e.target.value })}
-        />
-        <input
-          type="password"
-          placeholder="API Key (optional)"
-          value={newModel.apiKey}
-          onInput={(e) => setNewModel({ ...newModel, apiKey: e.target.value })}
-        />
-        <button class="btn btn-primary" onClick={onAdd}>Add Model</button>
-      </div>
-
-      {customModels.length > 0 && (
-        <div class="custom-models-list">
-          <h4>Custom Models</h4>
-          {customModels.map((model, i) => (
-            <div key={i} class="custom-model-item">
-              <div class="model-info">
-                <span class="model-name">{model.name}</span>
-                <span class="model-url">{model.baseUrl}</span>
+        {config.customModels.length > 0 && (
+          <div class="custom-models-list">
+            {config.customModels.map((model, i) => (
+              <div key={i} class="custom-model-item">
+                <div class="model-info">
+                  <span class="model-name">{model.name}</span>
+                  <span class="model-url">{model.baseUrl}</span>
+                </div>
+                <button class="btn btn-danger btn-sm" onClick={() => config.removeCustomModel(i)}>Remove</button>
               </div>
-              <button class="btn btn-danger btn-sm" onClick={() => onRemove(i)}>Remove</button>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </details>
+
     </div>
   );
 }
 
-// LicenseTab removed — BYOM is free, managed uses credit system
-
-function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, onEdit, onRemove }) {
+function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, onEdit, onRemove, formError }) {
   return (
     <div class="tab-content">
-      <p class="tab-desc">Add domain-specific tips to help the AI navigate websites</p>
+      <p class="tab-desc">Teach Hanzi how to navigate specific websites better</p>
 
       <button
         class="btn btn-secondary"
@@ -348,6 +335,7 @@ function SkillsTab({ userSkills, builtInSkills, skillForm, setSkillForm, onAdd, 
             onInput={(e) => setSkillForm({ ...skillForm, skill: e.target.value })}
             rows={4}
           />
+          {formError && <p class="provider-desc" style={{ color: 'var(--color-error)', marginBottom: '8px' }}>{formError}</p>}
           <div class="skill-form-actions">
             <button class="btn btn-secondary" onClick={() => setSkillForm({ ...skillForm, isOpen: false })}>
               Cancel

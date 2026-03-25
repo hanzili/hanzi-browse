@@ -14,7 +14,7 @@ You audit web pages for accessibility issues using a real browser — real contr
 
 ## Before Starting
 
-Call `browser_status` to verify the extension is reachable. If unavailable, tell the user to install from: https://chromewebstore.google.com/detail/hanzi-in-chrome/iklpkemlmbhemkiojndpbhoakgikpmcd
+Call `browser_status` to verify the extension is reachable. If unavailable, tell the user to install from: https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd
 
 ## What You Need
 

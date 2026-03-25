@@ -4,17 +4,17 @@
 
 set -e
 
-echo "=== Hanzi in Chrome - OAuth Native Host Uninstaller ==="
+echo "=== Hanzi Browse - OAuth Native Host Uninstaller ==="
 echo ""
 
 # Determine OS and remove manifest
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    MANIFEST_PATH="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.hanzi_in_chrome.oauth_host.json"
+    MANIFEST_PATH="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.hanzi_browse.oauth_host.json"
 
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
-    MANIFEST_PATH="$HOME/.config/google-chrome/NativeMessagingHosts/com.hanzi_in_chrome.oauth_host.json"
+    MANIFEST_PATH="$HOME/.config/google-chrome/NativeMessagingHosts/com.hanzi_browse.oauth_host.json"
 
 else
     echo "⚠️  Unsupported OS: $OSTYPE"

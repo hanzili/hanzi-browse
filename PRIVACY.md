@@ -65,7 +65,7 @@ These permissions are used solely for browser automation at your request.
 
 For questions about this privacy policy: hanzili0217@gmail.com
 
-Or open an issue: https://github.com/hanzili/hanzi-in-chrome/issues
+Or open an issue: https://github.com/hanzili/hanzi-browse/issues
 
 ## Changes
 

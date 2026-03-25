@@ -1,5 +1,5 @@
 /**
- * Side Panel - Chat interface for Hanzi in Chrome
+ * Side Panel - Chat interface for Hanzi Browse
  */
 
 // Provider configurations

@@ -50,7 +50,7 @@ Also inspect the actual implementation before changing anything:
 The current strongest onboarding surface is already:
 
 ```bash
-npx hanzi-in-chrome setup
+npx hanzi-browse setup
 ```
 
 That command:
@@ -140,7 +140,7 @@ A technical user can:
 
 1. land on the website
 2. click `Use Hanzi now`
-3. run `npx hanzi-in-chrome setup`
+3. run `npx hanzi-browse setup`
 4. install the extension if needed
 5. choose `BYOM` or `Managed`
 6. run one test task
@@ -198,7 +198,7 @@ Rewrite the public website around the two real entry paths:
 - Make the primary direct-user quickstart:
 
 ```bash
-npx hanzi-in-chrome setup
+npx hanzi-browse setup
 ```
 
 - Explain `BYOM` vs `Managed` inside the direct-use path
@@ -471,7 +471,7 @@ The task is complete when all of these are true.
 
 - homepage clearly presents `Use Hanzi now` and `Build with Hanzi`
 - docs clearly mirror those paths
-- direct users know to start with `npx hanzi-in-chrome setup`
+- direct users know to start with `npx hanzi-browse setup`
 
 ### Direct onboarding
 

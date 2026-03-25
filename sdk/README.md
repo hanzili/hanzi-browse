@@ -7,10 +7,10 @@ SDK for the Hanzi browser automation platform. Control a real Chrome browser pro
 The SDK is not yet published to npm. Install from the repo:
 
 ```bash
-# From the llm-in-chrome repo root:
+# From the hanzi-browse repo root:
 cd sdk && npm install && npm run build
 # Then in your project:
-npm install /path/to/llm-in-chrome/sdk
+npm install /path/to/hanzi-browse/sdk
 ```
 
 ## Quick Start

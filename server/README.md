@@ -1,4 +1,4 @@
-# Hanzi in Chrome — MCP Server
+# Hanzi Browse — MCP Server
 
 The MCP server exposes browser tools to MCP clients and forwards browser work to
 the Chrome extension over the local WebSocket relay.
@@ -18,7 +18,7 @@ Add to your MCP config (e.g., `~/.claude/claude_desktop_config.json`):
   "mcpServers": {
     "browser": {
       "command": "node",
-      "args": ["/path/to/hanzi-in-chrome/mcp-server/dist/index.js"]
+      "args": ["/path/to/hanzi-browse/mcp-server/dist/index.js"]
     }
   }
 }

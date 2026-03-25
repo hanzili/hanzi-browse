@@ -15,7 +15,7 @@ function hashSecret(secret: string): string {
   return createHash("sha256").update(secret).digest("hex");
 }
 
-const DATA_DIR = join(homedir(), ".hanzi-in-chrome", "managed");
+const DATA_DIR = join(homedir(), ".hanzi-browse", "managed");
 
 // --- Types ---
 

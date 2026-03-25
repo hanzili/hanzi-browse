@@ -203,7 +203,7 @@ export async function createPairingToken(workspaceId, apiKeyId, metadata) {
     return {
         token: tokenHash,
         workspaceId,
-        createdBy: apiKeyId,
+        createdBy: apiKeyId || "",
         createdAt: now,
         expiresAt,
         consumed: false,

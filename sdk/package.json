@@ -8,7 +8,7 @@
   "files": ["dist"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/hanzili/hanzi-in-chrome.git",
+    "url": "https://github.com/hanzili/hanzi-browse.git",
     "directory": "sdk"
   },
   "homepage": "https://browse.hanzilla.co/docs.html#build-with-hanzi",
