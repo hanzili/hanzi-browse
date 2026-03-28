@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240">
+  <!-- Background -->
+  <rect width="720" height="240" rx="16" fill="#fffdf8" stroke="#e5ddd0" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="360" y="32" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256" letter-spacing="0.08em">USE IT NOW</text>
+
+  <!-- Step 1: Your Agent -->
+  <rect x="40" y="52" width="180" height="56" rx="12" fill="#f7f3ea" stroke="#e5ddd0"/>
+  <text x="130" y="76" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#1f1711">Your Agent</text>
+  <text x="130" y="94" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256">Claude Code, Cursor, Codex...</text>
+
+  <!-- Arrow 1 -->
+  <path d="M220,80 L258,80" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="258,75 268,80 258,85" fill="#c4b8a8"/>
+
+  <!-- Step 2: browser_start -->
+  <rect x="270" y="52" width="200" height="56" rx="12" fill="#1f1711"/>
+  <text x="370" y="76" text-anchor="middle" font-family="monospace" font-size="13" fill="#f4e8d8">browser_start</text>
+  <text x="370" y="94" text-anchor="middle" font-family="monospace" font-size="11" fill="#a89882">"apply for this job"</text>
+
+  <!-- Arrow 2 -->
+  <path d="M470,80 L508,80" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="508,75 518,80 508,85" fill="#c4b8a8"/>
+
+  <!-- Step 3: Your Browser -->
+  <rect x="520" y="52" width="160" height="56" rx="12" fill="#f7f3ea" stroke="#e5ddd0"/>
+  <text x="600" y="76" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#1f1711">Your Chrome</text>
+  <text x="600" y="94" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256">Signed in. Real sessions.</text>
+
+  <!-- Arrow down -->
+  <path d="M600,108 L600,132" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="595,132 600,142 605,132" fill="#c4b8a8"/>
+
+  <!-- Result -->
+  <rect x="420" y="148" width="260" height="40" rx="10" fill="#eef5f0" stroke="#c5dece"/>
+  <text x="550" y="173" text-anchor="middle" font-family="monospace" font-size="12" fill="#2f4a3d">"Done. Applied with your resume."</text>
+
+  <!-- Bottom description -->
+  <text x="40" y="224" font-family="sans-serif" font-size="11" fill="#6d6256">Clicks, types, fills forms, reads authenticated pages, takes screenshots — in your real browser.</text>
+</svg>

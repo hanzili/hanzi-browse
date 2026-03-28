@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240">
+  <!-- Background -->
+  <rect width="720" height="240" rx="16" fill="#fffdf8" stroke="#e5ddd0" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="360" y="32" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256" letter-spacing="0.08em">BUILD WITH IT</text>
+
+  <!-- Step 1: Your App -->
+  <rect x="40" y="52" width="160" height="56" rx="12" fill="#f7f3ea" stroke="#e5ddd0"/>
+  <text x="120" y="76" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#1f1711">Your App</text>
+  <text x="120" y="94" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256">Web, mobile, backend</text>
+
+  <!-- Arrow 1 -->
+  <path d="M200,80 L238,80" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="238,75 248,80 238,85" fill="#c4b8a8"/>
+
+  <!-- Step 2: Hanzi API -->
+  <rect x="250" y="52" width="200" height="56" rx="12" fill="#1f1711"/>
+  <text x="350" y="76" text-anchor="middle" font-family="monospace" font-size="13" fill="#f4e8d8">POST /v1/tasks</text>
+  <text x="350" y="94" text-anchor="middle" font-family="monospace" font-size="11" fill="#a89882">"read the patient chart"</text>
+
+  <!-- Arrow 2 -->
+  <path d="M450,80 L488,80" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="488,75 498,80 488,85" fill="#c4b8a8"/>
+
+  <!-- Step 3: User's Browser -->
+  <rect x="500" y="52" width="180" height="56" rx="12" fill="#f7f3ea" stroke="#e5ddd0"/>
+  <text x="590" y="76" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#1f1711">User's Browser</text>
+  <text x="590" y="94" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#6d6256">Paired via link. Real sessions.</text>
+
+  <!-- Arrow down -->
+  <path d="M590,108 L590,132" stroke="#c4b8a8" stroke-width="2" fill="none"/>
+  <polygon points="585,132 590,142 595,132" fill="#c4b8a8"/>
+
+  <!-- Result -->
+  <rect x="370" y="148" width="310" height="40" rx="10" fill="#eef5f0" stroke="#c5dece"/>
+  <text x="525" y="173" text-anchor="middle" font-family="monospace" font-size="11" fill="#2f4a3d">{ answer: "Patient is on 10mg Lisinopril" }</text>
+
+  <!-- Bottom description -->
+  <text x="40" y="224" font-family="sans-serif" font-size="11" fill="#6d6256">Your app sends a task. Your user's real browser executes it. No Puppeteer. No headless. Real Chrome.</text>
+</svg>

@@ -12,6 +12,9 @@ STRUCTURED_LOGGING.md
 # Unused code
 docs/*
 !docs/architecture-diagram.png
+!docs/logo.svg
+!docs/diagrams/
+!docs/diagrams/*.svg
 profiles/
 src/popup/
 

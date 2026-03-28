@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="server/landing/favicon.svg" width="80" alt="Hanzi Browse" />
+<img src="docs/logo.svg" width="80" alt="Hanzi Browse" />
 
 # Hanzi Browse
 
