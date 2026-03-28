@@ -25,6 +25,7 @@
 
 import Stripe from "stripe";
 import { log } from "./log.js";
+import { trackManagedEvent } from "./telemetry.js";
 import type * as fileStore from "./store.js";
 
 let stripe: Stripe | null = null;
@@ -221,6 +222,7 @@ export async function handleWebhook(
           if (credits > 0) {
             const newBalance = await S.addCredits(workspaceId, credits);
             log.info("Credits purchased", { workspaceId }, { credits, newBalance });
+            trackManagedEvent("credits_purchased", workspaceId, { credits });
           }
         } catch (err: any) {
           log.error("Failed to persist checkout result", { workspaceId }, { error: err.message });

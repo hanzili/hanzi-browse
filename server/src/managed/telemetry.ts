@@ -50,10 +50,15 @@ export function captureManagedError(
   error: Error,
   context?: Record<string, string>
 ): void {
-  if (context) {
-    Sentry.setContext("task", context);
-  }
-  Sentry.captureException(error);
+  Sentry.withScope((scope) => {
+    if (context) {
+      scope.setContext("task", context);
+      // Set searchable tags for key identifiers
+      if (context.workspace_id) scope.setTag("workspace_id", context.workspace_id);
+      if (context.task_id) scope.setTag("task_id", context.task_id);
+    }
+    scope.captureException(error);
+  });
 }
 
 export async function shutdownManagedTelemetry(): Promise<void> {

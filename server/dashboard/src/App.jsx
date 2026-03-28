@@ -51,6 +51,7 @@ export function App() {
           email: r.data.user.email,
           name: r.data.user.name,
         });
+        posthog.capture('dashboard_sign_in');
       }
     }
   }, []);
@@ -114,6 +115,7 @@ export function App() {
         <button class={`tab ${tab === 'start' ? 'active' : ''}`} onClick={() => setTab('start')}>Getting Started</button>
         <button class={`tab ${tab === 'sessions' ? 'active' : ''}`} onClick={() => setTab('sessions')}>Sessions{sessions.length > 0 && <span class="tab-count">{sessions.filter(s => s.status === 'connected').length}</span>}</button>
         <button class={`tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>Settings</button>
+        <button class={`tab ${tab === 'automations' ? 'active' : ''}`} onClick={() => setTab('automations')}>Automations</button>
       </div>
 
       {tab === 'start' && (
@@ -134,6 +136,10 @@ export function App() {
 
       {tab === 'settings' && (
         <SettingsTab keys={keys} loadKeys={loadKeys} setError={setError} profile={profile} credits={credits} loadCredits={loadCredits} />
+      )}
+
+      {tab === 'automations' && (
+        <AutomationsTab sessions={sessions} workspaceId={profile?.workspace?.id} setError={setError} />
       )}
 
       {error && <div class="error-toast" onClick={() => setError(null)}>{error}</div>}
@@ -323,6 +329,7 @@ function PairAndTest({ sessions, loadSessions, extensionReady, pairing, paired, 
       setLinkGeneratedAt(Date.now());
       setSessionCountAtGen(sessions.length);
       setCountdown(300);
+      posthog.capture('pairing_link_generated');
     }
   };
 
@@ -657,6 +664,280 @@ function BuyCreditsButtons({ loadCredits, setError }) {
       <button class="btn-secondary" onClick={() => buy(1500)} disabled={buying} style={{ fontSize: 13 }}>
         1500 — $50
       </button>
+    </div>
+  );
+}
+
+// ─── Automations ─────────────────────────────────────
+
+function AutomationsTab({ sessions, workspaceId, setError }) {
+  const [automations, setAutomations] = useState([]);
+  const [drafts, setDrafts] = useState([]);
+  const [engagements, setEngagements] = useState([]);
+  const [view, setView] = useState('drafts'); // 'drafts' | 'setup' | 'history'
+  const [creating, setCreating] = useState(false);
+  const [posting, setPosting] = useState({});
+
+  // Setup form
+  const [productName, setProductName] = useState('');
+  const [productUrl, setProductUrl] = useState('');
+  const [productDesc, setProductDesc] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [schedule, setSchedule] = useState('0 9 * * 1,3,5');
+  const [sessionId, setSessionId] = useState('');
+
+  const loadAutomations = useCallback(async () => {
+    const r = await api('GET', '/v1/automations');
+    if (r?.data) setAutomations(Array.isArray(r.data) ? r.data : []);
+  }, []);
+
+  const loadDrafts = useCallback(async () => {
+    const r = await api('GET', '/v1/automations/drafts?status=pending');
+    if (r?.data) setDrafts(Array.isArray(r.data) ? r.data : []);
+  }, []);
+
+  const loadEngagements = useCallback(async () => {
+    const r = await api('GET', '/v1/automations/engagements?limit=20');
+    if (r?.data) setEngagements(Array.isArray(r.data) ? r.data : []);
+  }, []);
+
+  useEffect(() => {
+    loadAutomations();
+    loadDrafts();
+    loadEngagements();
+  }, []);
+
+  const connectedSessions = sessions.filter(s => s.status === 'connected');
+
+  async function createAutomation(e) {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      const r = await api('POST', '/v1/automations', {
+        browser_session_id: sessionId,
+        config: {
+          product_name: productName,
+          product_url: productUrl,
+          product_description: productDesc,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+          schedule_cron: schedule,
+          max_drafts: 8,
+          reply_mix: { a: 40, b: 40, c: 20 },
+        },
+      });
+      if (r?.data?.id) {
+        await loadAutomations();
+        setView('drafts');
+      } else {
+        setError(r?.data?.error || 'Failed to create automation');
+      }
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function approveDraft(id) {
+    await api('PATCH', `/v1/automations/drafts/${id}`, { status: 'approved' });
+    await loadDrafts();
+  }
+
+  async function skipDraft(id) {
+    await api('PATCH', `/v1/automations/drafts/${id}`, { status: 'skipped' });
+    await loadDrafts();
+  }
+
+  async function postDraft(id) {
+    setPosting(p => ({ ...p, [id]: true }));
+    try {
+      await api('POST', `/v1/automations/drafts/${id}/post`);
+      // Poll for completion
+      setTimeout(async () => {
+        await loadDrafts();
+        await loadEngagements();
+        setPosting(p => ({ ...p, [id]: false }));
+      }, 5000);
+    } catch {
+      setPosting(p => ({ ...p, [id]: false }));
+    }
+  }
+
+  async function toggleAutomation(auto) {
+    const newStatus = auto.status === 'active' ? 'paused' : 'active';
+    await api('PATCH', `/v1/automations/${auto.id}`, { status: newStatus });
+    await loadAutomations();
+  }
+
+  // No automations yet — show setup
+  if (automations.length === 0 || view === 'setup') {
+    return (
+      <div class="card">
+        <h2>Set up X Marketing Automation</h2>
+        <p style={{ color: 'var(--muted)', marginBottom: 16, fontSize: 14 }}>
+          Automatically find relevant X conversations and draft replies. You review and approve before anything gets posted.
+        </p>
+        <form onSubmit={createAutomation}>
+          <div class="form-group">
+            <label>Product name</label>
+            <input value={productName} onInput={e => setProductName(e.target.value)} placeholder="Hanzi Browse" required />
+          </div>
+          <div class="form-group">
+            <label>Product URL</label>
+            <input value={productUrl} onInput={e => setProductUrl(e.target.value)} placeholder="https://browse.hanzilla.co" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input value={productDesc} onInput={e => setProductDesc(e.target.value)} placeholder="Browser automation for AI agents" />
+          </div>
+          <div class="form-group">
+            <label>Keywords (comma-separated)</label>
+            <input value={keywords} onInput={e => setKeywords(e.target.value)} placeholder="browser automation, MCP server, AI agent browser" required />
+          </div>
+          <div class="form-group">
+            <label>Schedule</label>
+            <select value={schedule} onChange={e => setSchedule(e.target.value)}>
+              <option value="0 9 * * 1,3,5">3x per week (Mon, Wed, Fri 9am)</option>
+              <option value="0 9 * * *">Daily (9am)</option>
+              <option value="0 9,17 * * *">2x per day (9am, 5pm)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Browser session</label>
+            {connectedSessions.length === 0 ? (
+              <p style={{ color: 'var(--accent)', fontSize: 13 }}>No browser connected. Pair one first in the Sessions tab.</p>
+            ) : (
+              <select value={sessionId} onChange={e => setSessionId(e.target.value)} required>
+                <option value="">Select a session...</option>
+                {connectedSessions.map(s => (
+                  <option key={s.id} value={s.id}>{s.label || s.id.slice(0, 8)} — connected</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <button class="btn-primary" type="submit" disabled={creating || connectedSessions.length === 0}>
+            {creating ? 'Creating...' : 'Create Automation'}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // Main view with sub-tabs
+  const auto = automations[0]; // MVP: one automation per workspace
+  const pendingCount = drafts.length;
+
+  return (
+    <div>
+      {/* Status card */}
+      <div class="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <strong>{auto.config?.product_name || 'X Marketing'}</strong>
+            <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, fontSize: 12, background: auto.status === 'active' ? '#eef5f0' : auto.status === 'error' ? '#fef0ef' : '#f5f3ef', color: auto.status === 'active' ? '#2f4a3d' : auto.status === 'error' ? '#9a2e2e' : '#6d6256' }}>
+              {auto.status}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button class="btn-secondary" onClick={() => toggleAutomation(auto)} style={{ fontSize: 12 }}>
+              {auto.status === 'active' ? 'Pause' : 'Resume'}
+            </button>
+            <button class="btn-secondary" onClick={() => setView('setup')} style={{ fontSize: 12 }}>
+              Edit
+            </button>
+          </div>
+        </div>
+        {auto.errorMessage && <p style={{ color: '#9a2e2e', fontSize: 13, marginTop: 8 }}>{auto.errorMessage}</p>}
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
+          Last run: {auto.lastRunAt ? timeAgo(auto.lastRunAt) : 'never'} · Next: {auto.nextRunAt ? new Date(auto.nextRunAt).toLocaleString() : 'not scheduled'}
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <button class={`tab ${view === 'drafts' ? 'active' : ''}`} onClick={() => { setView('drafts'); loadDrafts(); }}>
+          Drafts {pendingCount > 0 && <span class="tab-count">{pendingCount}</span>}
+        </button>
+        <button class={`tab ${view === 'history' ? 'active' : ''}`} onClick={() => { setView('history'); loadEngagements(); }}>
+          History
+        </button>
+      </div>
+
+      {/* Drafts */}
+      {view === 'drafts' && (
+        <div>
+          {drafts.length === 0 ? (
+            <div class="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
+              <p>No pending drafts. The next scout will run {auto.nextRunAt ? new Date(auto.nextRunAt).toLocaleString() : 'when scheduled'}.</p>
+            </div>
+          ) : (
+            drafts.map(d => (
+              <div key={d.id} class="card" style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <strong style={{ fontSize: 14 }}>{d.tweetAuthorName || 'Unknown'}</strong>
+                    <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 13 }}>{d.tweetAuthorHandle}</span>
+                    {d.tweetAuthorFollowers && <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 12 }}>({d.tweetAuthorFollowers.toLocaleString()} followers)</span>}
+                  </div>
+                  <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: d.replyType === 'A' ? '#eef5f0' : d.replyType === 'C' ? '#fef5ee' : '#f0eef5', color: d.replyType === 'A' ? '#2f4a3d' : d.replyType === 'C' ? '#8a5a2e' : '#4a3d6b' }}>
+                    Type {d.replyType || '?'}
+                  </span>
+                </div>
+                {/* Original tweet */}
+                <div style={{ background: '#f7f3ea', padding: '10px 12px', borderRadius: 8, fontSize: 13, marginBottom: 10, color: 'var(--ink)' }}>
+                  {d.tweetText || 'Tweet not available'}
+                </div>
+                {/* Draft reply */}
+                <div style={{ background: '#f0f7f2', padding: '10px 12px', borderRadius: 8, fontSize: 13, marginBottom: 10, color: '#1f1711', borderLeft: '3px solid #2f4a3d' }}>
+                  {d.replyText}
+                </div>
+                {d.replyReasoning && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{d.replyReasoning}</div>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {d.status === 'pending' && (
+                    <>
+                      <button class="btn-primary" onClick={() => approveDraft(d.id)} style={{ fontSize: 12 }}>Approve</button>
+                      <button class="btn-secondary" onClick={() => skipDraft(d.id)} style={{ fontSize: 12 }}>Skip</button>
+                    </>
+                  )}
+                  {d.status === 'approved' && (
+                    <button class="btn-primary" onClick={() => postDraft(d.id)} disabled={posting[d.id]} style={{ fontSize: 12 }}>
+                      {posting[d.id] ? 'Posting...' : 'Post'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* History */}
+      {view === 'history' && (
+        <div class="card">
+          {engagements.length === 0 ? (
+            <p style={{ color: 'var(--muted)', textAlign: 'center' }}>No engagements yet.</p>
+          ) : (
+            <table style={{ width: '100%', fontSize: 13 }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
+                  <th>Handle</th>
+                  <th>Type</th>
+                  <th>Reply</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {engagements.map(e => (
+                  <tr key={e.id}>
+                    <td><a href={e.tweetUrl} target="_blank" rel="noopener">{e.authorHandle}</a></td>
+                    <td>{e.replyType || '-'}</td>
+                    <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.replySummary || '-'}</td>
+                    <td>{timeAgo(e.postedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }

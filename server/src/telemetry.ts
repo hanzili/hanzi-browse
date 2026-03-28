@@ -143,8 +143,10 @@ export function trackEvent(name: string, properties?: Record<string, any>): void
 
 export function captureException(error: Error, context?: Record<string, string>): void {
   if (!enabled) return;
-  if (context) Sentry.setContext("extra", context);
-  Sentry.captureException(error);
+  Sentry.withScope((scope) => {
+    if (context) scope.setContext("extra", context);
+    scope.captureException(error);
+  });
 }
 
 export async function shutdownTelemetry(): Promise<void> {

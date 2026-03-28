@@ -1116,10 +1116,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           session.error = `Task still running after ${TASK_TIMEOUT_MS / 60000} minutes. Use browser_screenshot to check progress, then browser_message to continue or browser_stop to end.`;
         }
 
-        trackEvent(session.status === "complete" ? "task_completed" : "task_failed", {
-          status: session.status,
-          steps: session.steps.length,
-        });
+        if (session.status === "complete") {
+          trackEvent("task_completed", {
+            steps: session.steps.length,
+            duration_ms: Date.now() - session.createdAt,
+          });
+        } else {
+          trackEvent("task_failed", {
+            error_category: session.status === "timeout" ? "timeout" : "unknown",
+            steps: session.steps.length,
+          });
+        }
 
         return {
           content: [{ type: "text", text: JSON.stringify(formatResult(session), null, 2) }],
@@ -1281,6 +1288,8 @@ async function main() {
 process.on("beforeExit", async () => {
   await shutdownTelemetry();
 });
+process.on("SIGTERM", async () => { await shutdownTelemetry(); process.exit(0); });
+process.on("SIGINT", async () => { await shutdownTelemetry(); process.exit(0); });
 
 main().catch((error) => {
   captureException(error, { context: "fatal_startup" });
