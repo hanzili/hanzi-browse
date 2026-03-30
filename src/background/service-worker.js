@@ -42,7 +42,7 @@ import { showAgentIndicators, hideAgentIndicators, hideIndicatorsForToolUse, sho
 import { ensureTabGroup, addTabToGroup, validateTabInGroup, isTabManagedByAgent, registerTabCleanupListener, initTabManager } from './managers/tab-manager.js';
 import {
   initMcpBridge, sendMcpUpdate, sendMcpComplete, sendMcpError, sendMcpScreenshot, queryMemory, sendEscalation,
-  setManagedSession, clearManagedSession, getManagedSessionInfo, sendToMcpRelay,
+  setManagedSession, clearManagedSession, getManagedSessionInfo, sendToMcpRelay, stopManagedTask,
 } from './modules/mcp-bridge.js';
 import { checkAndIncrementUsage, activateLicense, getLicenseStatus, deactivateLicense } from './managers/license-manager.js';
 import { initErrorReporting, captureError } from './modules/error-reporter.js';
@@ -1323,8 +1323,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'STOP_TASK':
       uiSessionState.cancelled = true;
-      // Abort any ongoing API call
+      // Abort any ongoing API call (sidepanel agent)
       abortRequest();
+      // Stop managed tasks (reject further tool executions)
+      stopManagedTask();
       // Also resolve any pending plan approval
       resolvePendingPlan('ui-task', { approved: false });
       sendResponse({ success: true });
@@ -1456,7 +1458,11 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // Set side panel behavior
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+try {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+} catch (e) {
+  // sidePanel API may not return a promise in all Chrome versions
+}
 
 // ============================================
 // MCP BRIDGE INTEGRATION

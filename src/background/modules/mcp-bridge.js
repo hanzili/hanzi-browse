@@ -23,6 +23,9 @@ let managedRelayUrl = null;
 // This prevents managed tool execution from using the global active tab fallback.
 const managedSessionTabs = new Map();
 
+// Stop flag — when true, reject all incoming tool executions
+let managedTaskStopped = false;
+
 // Managed session credentials (set when pairing flow completes)
 let managedSessionToken = null;
 let managedBrowserSessionId = null;
@@ -204,15 +207,15 @@ export function connectToRelay() {
     return;
   }
 
-  // Load managed credentials from storage first, then connect
-  chrome.storage.local.get(['managed_session_token', 'managed_browser_session_id', 'managed_relay_url']).then(stored => {
-    if (stored.managed_session_token) {
+  // Load managed credentials from storage first, then connect.
+  // Use callback form — promise-based chrome.storage.local.get() is not
+  // available in all Chrome versions / startup contexts.
+  chrome.storage.local.get(['managed_session_token', 'managed_browser_session_id', 'managed_relay_url'], (stored) => {
+    if (stored && stored.managed_session_token) {
       managedSessionToken = stored.managed_session_token;
       managedBrowserSessionId = stored.managed_browser_session_id;
       managedRelayUrl = stored.managed_relay_url || null;
     }
-    _doConnect();
-  }).catch(() => {
     _doConnect();
   });
 }
@@ -406,6 +409,15 @@ function normalizeIncomingMessage(message) {
 /**
  * Check if WebSocket relay is connected
  */
+export function stopManagedTask() {
+  managedTaskStopped = true;
+  // Hide overlay on all managed tabs
+  for (const [, tabId] of managedSessionTabs) {
+    try { chrome.tabs.sendMessage(tabId, { type: 'HIDE_AGENT_INDICATORS' }); } catch {}
+  }
+  console.log('[MCP Bridge] Managed task stopped by user');
+}
+
 export function isRelayConnected() {
   return relaySocket && relaySocket.readyState === WebSocket.OPEN;
 }
@@ -609,17 +621,11 @@ async function handleMcpCommand(command) {
 
     // Handle managed task responses (from managed backend via relay)
     case 'task_started':
+      managedTaskStopped = false; // Reset stop flag for new task
       chrome.runtime.sendMessage({
         type: 'TASK_UPDATE',
         update: { status: 'running', message: 'Task started on managed service...', taskId: command.taskId },
       }).catch(() => {});
-      // Show agent indicators with task ID on the active tab
-      try {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (activeTab?.id) {
-          await chrome.tabs.sendMessage(activeTab.id, { type: 'SHOW_AGENT_INDICATORS', taskId: command.taskId });
-        }
-      } catch {}
       break;
 
     case 'task_update':
@@ -639,6 +645,12 @@ async function handleMcpCommand(command) {
         type: 'TASK_COMPLETE',
         result: command.answer || 'Done',
       }).catch(() => {});
+      // Hide overlay on all managed session tabs
+      try {
+        for (const [, tabId] of managedSessionTabs) {
+          try { await chrome.tabs.sendMessage(tabId, { type: 'HIDE_AGENT_INDICATORS' }); } catch {}
+        }
+      } catch {}
       break;
 
     case 'task_error':
@@ -646,6 +658,12 @@ async function handleMcpCommand(command) {
         type: 'TASK_ERROR',
         error: command.error || 'Task failed',
       }).catch(() => {});
+      // Hide overlay on all managed session tabs
+      try {
+        for (const [, tabId] of managedSessionTabs) {
+          try { await chrome.tabs.sendMessage(tabId, { type: 'HIDE_AGENT_INDICATORS' }); } catch {}
+        }
+      } catch {}
       break;
 
     case 'execute_tool': {
@@ -656,6 +674,16 @@ async function handleMcpCommand(command) {
 
       if (!requestId || !tool) {
         debugLog('execute_tool missing requestId or tool');
+        break;
+      }
+
+      // If user clicked Stop, reject all tool executions
+      if (managedTaskStopped) {
+        sendToMcpRelay({
+          type: 'tool_result',
+          requestId,
+          error: 'Task stopped by user',
+        });
         break;
       }
 
@@ -731,6 +759,11 @@ async function handleMcpCommand(command) {
             break;
           }
         }
+
+        // Show "Powered by Hanzi Browse" overlay on the session tab
+        try {
+          await chrome.tabs.sendMessage(tabId, { type: 'SHOW_AGENT_INDICATORS', taskId: command.taskId || requestId });
+        } catch {} // content script may not be ready yet
 
         // Inject the session-owned tabId — tools read it from input directly
         const toolInput = { ...input, tabId };
