@@ -9,7 +9,7 @@
 
 import { BaseProvider } from './base-provider.js';
 import { filterClaudeOnlyTools } from '../../../tools/definitions.js';
-import { isRelayConnected, proxyApiCall } from '../mcp-bridge.js';
+import { isRelayConnected, proxyApiCall } from '../relay-client.js';
 
 const NATIVE_HOST_NAME = 'com.hanzi_browse.oauth_host';
 const CODEX_API_URL = 'https://chatgpt.com/backend-api/codex/responses';
