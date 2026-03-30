@@ -160,9 +160,9 @@ Building a product? [Contact us](mailto:hanzili0217@gmail.com?subject=Partner%20
 
 ## Development
 
-**Prerequisites:** [Node.js 18+](https://nodejs.org/), [Docker Desktop](https://docs.docker.com/get-docker/) (must be running).
+**Prerequisites:** [Node.js 18+](https://nodejs.org/), [Docker Desktop](https://docs.docker.com/get-docker/) (must be running before `make fresh`).
 
-### First time
+### First time (local setup)
 
 ```bash
 git clone https://github.com/hanzili/hanzi-browse
@@ -170,32 +170,23 @@ cd hanzi-browse
 make fresh
 ```
 
-This checks prerequisites, creates `.env` from the template, installs dependencies, builds everything, starts Postgres, runs migrations, and starts the dev server. Takes about 90 seconds.
+Performs full setup: installs deps, builds server/dashboard/extension, starts Postgres, runs migrations, and launches the dev server (~90s).
 
-### Every time after
+### Run the project
 
 ```bash
 make dev
 ```
 
-Starts Postgres + migrations + dev server. Dashboard at [localhost:3456/dashboard](http://localhost:3456/dashboard).
-
-### Commands
-
-| Command | What it does |
-|---------|-------------|
-| `make fresh` | Full first-time setup (prereqs + deps + build + DB + start) |
-| `make dev` | Start everything (DB + migrate + server) |
-| `make build` | Rebuild server + dashboard + extension |
-| `make stop` | Stop Postgres |
-| `make clean` | Stop + delete database volume |
-| `make check-prereqs` | Verify Node 18+ and Docker are available |
-| `make help` | Show all commands |
+Starts the backend services (Postgres + migrations + API server) and serves the dashboard UI.
+- API: http://localhost:3456
+- Dashboard (requires Google OAuth): http://localhost:3456/dashboard
 
 ### Configuration
 
-The defaults in `.env.example` are enough to run the server. Optional services:
+The defaults in `.env.example` are enough to run the server.
 
+Optional services:
 - **Google OAuth** (dashboard sign-in) -- add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` to `.env`
 - **Stripe** (credit purchases) -- add test keys to `.env`
 - **Vertex AI** (managed task execution) -- see `.env.example` for setup steps
@@ -203,6 +194,23 @@ The defaults in `.env.example` are enough to run the server. Optional services:
 ### Load the extension
 
 Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", select the `dist/` folder.
+
+### Notes
+
+- **Local vs CLI usage** -- `npx hanzi-browse setup` is for packaged usage and may not work in a local clone
+- **Port conflicts** -- if you see `EADDRINUSE` on `3456`, stop existing processes or run `make stop`
+
+### Commands
+
+| Command | What it does |
+|---------|-------------|
+| `make fresh` | Full first-time setup (deps + build + DB + start) |
+| `make dev` | Start everything (DB + migrate + server) |
+| `make build` | Rebuild server + dashboard + extension |
+| `make stop` | Stop Postgres |
+| `make clean` | Stop + delete database volume |
+| `make check-prereqs` | Verify Node 18+ and Docker are available |
+| `make help` | Show all commands |
 
 <br/>
 
@@ -226,6 +234,8 @@ Hanzi operates in different modes with different data handling. [Read the privac
 
 - **BYOM**: No data sent to Hanzi servers. Screenshots go to your chosen AI provider only.
 - **Managed / API**: Task data processed on Hanzi servers via Google Vertex AI.
+
+<br/>
 
 ## License
 
