@@ -200,6 +200,7 @@
       this.sessionId = null;
       this.state = 'checking'; // checking | install | pair | pairing | connected
       this.pollInterval = null;
+      this.heartbeatInterval = null;
 
       this.injectStyles();
       this.render();
@@ -277,6 +278,7 @@
           this.sessionId = connected.id;
           this.state = 'connected';
           this.render();
+          this.startHeartbeat();
           this.onConnected(this.sessionId);
           return;
         }
@@ -318,6 +320,7 @@
               this.sessionId = connected.id;
               this.state = 'connected';
               this.render();
+              this.startHeartbeat();
               this.onConnected(this.sessionId);
             }
           } catch {}
@@ -336,6 +339,35 @@
         this.state = 'pair';
         this.render();
       }
+    }
+
+    bindEvents() {
+      if (!this.container) return;
+      this.container.querySelectorAll('[data-action]').forEach(el => {
+        const action = el.getAttribute('data-action');
+        el.addEventListener('click', () => {
+          if (action === 'checkExtension') this.checkExtension();
+          if (action === 'startPairing') this.startPairing();
+        });
+      });
+    }
+
+    startHeartbeat() {
+      if (this.heartbeatInterval) return;
+      this.heartbeatInterval = setInterval(async () => {
+        try {
+          const data = await this.api('GET', '/v1/browser-sessions');
+          const session = (data.sessions || []).find(s => s.id === this.sessionId);
+          if (!session || session.status !== 'connected') {
+            this.sessionId = null;
+            this.state = 'pair';
+            this.render();
+            this.onDisconnected(this.sessionId);
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+          }
+        } catch {}
+      }, 15000);
     }
 
     // Render based on state
@@ -357,11 +389,11 @@
         stepsHtml = step(1, 'Install the Hanzi Browse extension', 'active') +
                     step(2, 'Connect your browser', 'pending');
         actionHtml = `<a href="${STORE_URL}" target="_blank" class="hanzi-btn hanzi-btn-primary">Install Extension</a>
-                      <br><button class="hanzi-btn hanzi-btn-secondary" onclick="window._hanziWidget.checkExtension()">I already installed it</button>`;
+                      <br><button class="hanzi-btn hanzi-btn-secondary" data-action="checkExtension">I already installed it</button>`;
       } else if (this.state === 'pair') {
         stepsHtml = step(1, 'Extension installed', 'done') +
                     step(2, 'Connect your browser', 'active');
-        actionHtml = `<button class="hanzi-btn hanzi-btn-primary" onclick="window._hanziWidget.startPairing()">Connect browser</button>`;
+        actionHtml = `<button class="hanzi-btn hanzi-btn-primary" data-action="startPairing">Connect browser</button>`;
       } else if (this.state === 'pairing') {
         stepsHtml = step(1, 'Extension installed', 'done') +
                     step(2, 'Connecting...', 'active');
@@ -391,12 +423,14 @@
           </div>
         </div>
       `;
+      this.bindEvents();
     }
 
     // Cleanup
     destroy() {
       if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
       if (this.installPoll) { clearInterval(this.installPoll); this.installPoll = null; }
+      if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; }
       if (this.container) { this.container.innerHTML = ''; }
     }
   }
@@ -405,9 +439,7 @@
 
   window.HanziConnect = {
     mount(selector, options) {
-      const widget = new HanziConnectWidget(selector, options);
-      window._hanziWidget = widget; // for onclick handlers
-      return widget;
+      return new HanziConnectWidget(selector, options);
     },
   };
 })();
