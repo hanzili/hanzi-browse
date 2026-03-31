@@ -17,6 +17,8 @@ docs/*
 !docs/diagrams/*.svg
 !docs/zh/
 !docs/zh/*.md
+!docs/blog/
+!docs/blog/**
 profiles/
 src/popup/
 
