@@ -21,8 +21,13 @@
     <priority>0.6</priority>
   </url>
   <url>
+<<<<<<< HEAD
     <loc>https://browse.hanzilla.co/e2e-tester.html</loc>
     <lastmod>2026-04-01</lastmod>
+=======
+    <loc>https://browse.hanzilla.co/a11y-auditor.html</loc>
+    <lastmod>2026-04-02</lastmod>
+>>>>>>> 1221a1a (feat: add Accessibility Auditor landing page)
     <priority>0.6</priority>
   </url>
 </urlset>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automate Accessibility Audits with AI — Hanzi</title>
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <meta name="description" content="One command. Your AI agent audits web pages for WCAG 2.1 AA issues — contrast, keyboard navigation, ARIA, semantic HTML — in your real Chrome browser.">
+
+    <meta property="og:title" content="Automate Accessibility Audits with AI — Hanzi">
+    <meta property="og:description" content="One command. Your AI agent audits web pages for WCAG 2.1 AA issues — contrast, keyboard navigation, ARIA, semantic HTML — in your real Chrome browser.">
+    <meta property="og:image" content="https://browse.hanzilla.co/og.png">
+    <meta property="og:url" content="https://browse.hanzilla.co/a11y-auditor">
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Automate Accessibility Audits with AI — Hanzi">
+    <meta name="twitter:description" content="One command. Your AI agent audits web pages for WCAG 2.1 AA issues — contrast, keyboard navigation, ARIA, semantic HTML — in your real Chrome browser.">
+    <meta name="twitter:image" content="https://browse.hanzilla.co/og.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Hanzi Accessibility Auditor",
+      "description": "AI-powered accessibility auditing skill that checks web pages for WCAG 2.1 AA compliance in a real browser — contrast, focus indicators, keyboard navigation, ARIA labels, and semantic HTML.",
+      "url": "https://browse.hanzilla.co/a11y-auditor",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Chrome, Edge, Brave, Arc",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Free and open source. Use your own AI API key."
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Hanzi",
+        "url": "https://browse.hanzilla.co"
+      }
+    }
+    </script>
+
+    <style>
+        :root {
+            --bg: #f7f3ea;
+            --surface: #fffdf8;
+            --surface-2: #f3ede2;
+            --ink: #1f1711;
+            --muted: #6d6256;
+            --line: #e5ddd0;
+            --accent: #ad5a34;
+            --accent-dark: #8d4524;
+            --green: #2f4a3d;
+            --shadow: 0 16px 40px rgba(54, 38, 23, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(233, 199, 146, 0.22), transparent 28%),
+                radial-gradient(circle at top right, rgba(154, 191, 170, 0.18), transparent 26%),
+                var(--bg);
+            color: var(--ink);
+            font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 28px 0 18px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        .brand-mark { width: 26px; height: 26px; flex-shrink: 0; }
+
+        .header-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+        .btn, .link-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+        }
+
+        .btn:hover, .link-pill:hover { transform: translateY(-1px); }
+
+        .btn-primary {
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        }
+
+        h1, h2 {
+            font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+            letter-spacing: -0.05em;
+        }
+
+        /* Hero */
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 42px;
+            align-items: center;
+            padding: 34px 0 44px;
+        }
+
+        h1 {
+            margin-top: 12px;
+            font-size: clamp(2.6rem, 6vw, 4.4rem);
+            line-height: 0.95;
+        }
+
+        .hero-copy p {
+            max-width: 520px;
+            margin-top: 18px;
+            font-size: 18px;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .hero-copy strong { color: var(--ink); }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid #e9d5c8;
+            background: #fcf4ee;
+            color: var(--accent-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .demo-panel {
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            padding: 28px;
+        }
+
+        .demo-panel h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--ink);
+        }
+
+        .report-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .report-item:last-child { border-bottom: none; }
+
+        .report-severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .severity-critical { background: #fde8e8; color: #9b1c1c; }
+        .severity-serious { background: #fef3cd; color: #856404; }
+        .severity-moderate { background: #e8f4fd; color: #1e6fba; }
+
+        .report-desc {
+            margin-top: 4px;
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .report-criterion {
+            font-size: 12px;
+            color: var(--accent-dark);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Sections */
+        .section {
+            padding: 56px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .section-kicker {
+            color: var(--accent-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            margin-top: 10px;
+            font-size: clamp(2.1rem, 4vw, 3.3rem);
+            line-height: 0.96;
+        }
+
+        /* Steps */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        .step-card {
+            padding: 22px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--surface);
+        }
+
+        .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            margin-bottom: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .step-card h3 {
+            font-size: 18px;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .step-card p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        /* Goals */
+        .goals-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 28px;
+        }
+
+        .goal-chip {
+            padding: 12px 18px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--surface);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .goal-chip span {
+            margin-right: 6px;
+        }
+
+        /* Differentiators */
+        .diff-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        .diff-card {
+            padding: 22px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--surface);
+        }
+
+        .diff-card h3 {
+            font-size: 18px;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .diff-card p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        /* CTA */
+        .cta-band {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 20px;
+            align-items: center;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: linear-gradient(135deg, #fffdf8 0%, #f2eadf 100%);
+        }
+
+        .setup-copy {
+            position: relative;
+            padding: 16px 16px 18px;
+            border-radius: 16px;
+            background: #241c17;
+        }
+
+        .setup-copy pre {
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #f4e8d8;
+            font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            padding-right: 60px;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #9a8a78;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 140ms ease, color 140ms ease;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.18);
+            color: #f4e8d8;
+        }
+
+        .tab:hover { background: rgba(255, 255, 255, 0.14); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .setup-copy .dim { color: #6d5e50; }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #f4e8d8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 30px 0 40px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
+
+        @media (max-width: 980px) {
+            .hero, .steps-grid, .diff-grid, .cta-band { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            .page { width: min(100% - 24px, 1120px); }
+            header { padding-top: 20px; }
+            .header-links { flex-direction: column; align-items: stretch; }
+            .btn, .link-pill { width: 100%; }
+            h1 { font-size: clamp(2.4rem, 14vw, 3.6rem); }
+            .hero-copy p { font-size: 16px; }
+            .section { padding: 44px 0; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <a class="brand" href="index.html">
+                <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="24" height="24" rx="6" fill="#1f1711"/>
+                    <path d="M7 7v10M17 7v10M7 12h10" stroke="#fffdf8" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+                Hanzi
+            </a>
+            <div class="header-links">
+                <a class="link-pill" href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer">GitHub</a>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-copy">
+                    <div class="eyebrow">Skill</div>
+                    <h1>Accessibility audits, automated.</h1>
+                    <p>One command. Your AI agent opens your site in a real browser, checks contrast, keyboard navigation, ARIA labels, and semantic HTML against <strong>WCAG 2.1 AA</strong>. Screenshots every issue it finds.</p>
+                    <div style="margin-top: 24px; max-width: 520px;">
+                        <div class="setup-copy" style="margin-top: 0;">
+                            <div class="tab-bar">
+                                <button class="tab active" onclick="switchTab(this, 'mcp')">Claude Code / Cursor</button>
+                                <button class="tab" onclick="switchTab(this, 'cli')">Codex / CLI</button>
+                            </div>
+                            <div class="tab-content active" data-tab="mcp">
+                                <pre><span class="dim">$</span> npx hanzi-browse setup
+<span class="dim">$</span> /a11y-auditor</pre>
+                            </div>
+                            <div class="tab-content" data-tab="cli">
+                                <pre><span class="dim">$</span> npx hanzi-browse setup
+<span class="dim">$</span> hanzi-browser start "audit accessibility" --skill a11y-auditor --url https://your-site.com</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-panel">
+                    <h3>Sample audit report</h3>
+                    <div class="report-item">
+                        <span class="report-severity severity-critical">Critical</span>
+                        <div class="report-desc">Search button has no accessible name — screen readers announce it as "button".</div>
+                        <div class="report-criterion">WCAG 4.1.2 — Name, Role, Value</div>
+                    </div>
+                    <div class="report-item">
+                        <span class="report-severity severity-serious">Serious</span>
+                        <div class="report-desc">Body text contrast ratio is 3.2:1 — requires 4.5:1 for normal text.</div>
+                        <div class="report-criterion">WCAG 1.4.3 — Contrast (Minimum)</div>
+                    </div>
+                    <div class="report-item">
+                        <span class="report-severity severity-serious">Serious</span>
+                        <div class="report-desc">Modal dialog traps keyboard focus — no way to close with Escape key.</div>
+                        <div class="report-criterion">WCAG 2.1.2 — No Keyboard Trap</div>
+                    </div>
+                    <div class="report-item">
+                        <span class="report-severity severity-moderate">Moderate</span>
+                        <div class="report-desc">Navigation uses div elements instead of nav landmark — breaks screen reader navigation.</div>
+                        <div class="report-criterion">WCAG 1.3.1 — Info and Relationships</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">What it checks</div>
+                    <h2>Real browser. Real issues.</h2>
+                </div>
+                <div class="goals-row">
+                    <div class="goal-chip"><span>🎨</span> Color contrast</div>
+                    <div class="goal-chip"><span>⌨️</span> Keyboard navigation</div>
+                    <div class="goal-chip"><span>🏷️</span> ARIA labels</div>
+                    <div class="goal-chip"><span>📐</span> Semantic HTML</div>
+                    <div class="goal-chip"><span>🔍</span> Focus indicators</div>
+                    <div class="goal-chip"><span>📏</span> Font sizes</div>
+                    <div class="goal-chip"><span>👆</span> Touch targets</div>
+                    <div class="goal-chip"><span>🔗</span> Skip links</div>
+                    <div class="goal-chip"><span>📊</span> Heading hierarchy</div>
+                    <div class="goal-chip"><span>🖼️</span> Alt text</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">How it works</div>
+                    <h2>Four phases. Full coverage.</h2>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h3>Codebase review</h3>
+                        <p>Scans your source for ARIA usage, semantic HTML, image alt text, form labels, and heading hierarchy — before opening the browser.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h3>Visual checks</h3>
+                        <p>Opens the page in your real Chrome. Checks color contrast ratios, font sizes, focus indicators, touch target sizes, and animations. Screenshots every issue.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h3>Keyboard testing</h3>
+                        <p>Tabs through the entire page. Tests focus order, keyboard traps in modals, Enter/Space operability, and skip links. Screenshots problematic states.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">4</div>
+                        <h3>ARIA &amp; semantics</h3>
+                        <p>Verifies landmarks, form label associations, live regions for dynamic content, accessible names on icons, and table headers.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">5</div>
+                        <h3>Structured report</h3>
+                        <p>Every issue gets a severity level, the specific element, WCAG criterion, and a concrete fix. Includes file paths and complexity estimates when source is available.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">6</div>
+                        <h3>Prioritized action plan</h3>
+                        <p>Ends with severity totals and the top 3 priorities to fix first. No guessing — every finding is verified in the real browser.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">Why this is different</div>
+                    <h2>Not another Lighthouse wrapper.</h2>
+                </div>
+                <div class="diff-grid">
+                    <div class="diff-card">
+                        <h3>Your real browser</h3>
+                        <p>Runs in your actual Chrome — real contrast, real tab order, real focus indicators. Not a synthetic test environment.</p>
+                    </div>
+                    <div class="diff-card">
+                        <h3>AI-powered understanding</h3>
+                        <p>Understands context. Knows that a "close" icon needs an accessible name, that a div acting as a button needs a role. Not just rule-matching.</p>
+                    </div>
+                    <div class="diff-card">
+                        <h3>Code + browser</h3>
+                        <p>Reviews your source code first, then verifies in the browser. Gives you the exact file, line, and fix — not just a generic recommendation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="cta-band">
+                    <div>
+                        <div class="section-kicker">Get started</div>
+                        <h2>One command. Start auditing.</h2>
+                    </div>
+                    <div class="setup-copy">
+                        <pre>npx hanzi-browse setup</pre>
+                        <button class="copy-btn" data-copy="npx hanzi-browse setup" onclick="copyData(this)">Copy</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div>Give your AI agent a real browser.</div>
+            <div class="footer-links">
+                <a href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://www.npmjs.com/package/hanzi-browse" target="_blank" rel="noreferrer">npm</a>
+                <a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank" rel="noreferrer">Chrome Web Store</a>
+                <a href="https://x.com/hanzi_li" target="_blank" rel="noreferrer">Twitter</a>
+                <a href="https://www.linkedin.com/in/hanzi-li-mcgill/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a href="mailto:hanzili0217@gmail.com">Contact</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function copyData(button) {
+            navigator.clipboard.writeText(button.dataset.copy || '');
+            const original = button.textContent;
+            button.textContent = 'Copied';
+            setTimeout(() => {
+                button.textContent = original;
+            }, 1500);
+        }
+
+        function switchTab(button, tabId) {
+            const bar = button.closest('.setup-copy');
+            bar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            bar.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            button.classList.add('active');
+            bar.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        }
+    </script>
+</body>
+</html>
