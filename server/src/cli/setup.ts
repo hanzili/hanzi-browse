@@ -30,6 +30,7 @@ interface AgentConfig {
   detect: () => boolean;
   configPath?: () => string;
   configSection?: 'mcpServers' | 'servers' | 'context_servers';
+  legacyConfigSections?: ('mcpServers' | 'servers' | 'context_servers')[];
   cliCommand?: string;
   skillsDir?: () => string;
 }
@@ -44,6 +45,7 @@ interface AgentRegistryDeps {
   home?: string;
   plat?: NodeJS.Platform;
   appData?: string;
+  xdgConfigHome?: string;
   pathExists?: (path: string) => boolean;
   runCommand?: (command: string, options?: any) => Buffer | string;
 }
@@ -126,7 +128,7 @@ export function getAgentRegistry(deps: AgentRegistryDeps = {}): AgentConfig[] {
   const home = deps.home ?? homedir();
   const plat = deps.plat ?? platform();
   const appData = deps.appData ?? process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
-  const xdgConfigHome = process.env.XDG_CONFIG_HOME ?? join(home, '.config');
+  const xdgConfigHome = deps.xdgConfigHome ?? process.env.XDG_CONFIG_HOME ?? join(home, '.config');
   const pathExists = deps.pathExists ?? existsSync;
   const runCommand = deps.runCommand ?? execSync;
 
@@ -167,6 +169,7 @@ export function getAgentRegistry(deps: AgentRegistryDeps = {}): AgentConfig[] {
       method: 'json-merge',
       configPath: () => join(home, '.vscode', 'mcp.json'),
       configSection: 'servers',
+      legacyConfigSections: ['mcpServers'],
       skillsDir: () => join(home, '.vscode', 'skills'),
       detect: () => pathExists(join(home, '.vscode')),
     },
@@ -262,10 +265,29 @@ export function mergeJsonConfig(configPath: string, deps: JsonConfigDeps = {}): 
   return mergeJsonConfigAtKey(configPath, 'mcpServers', deps);
 }
 
+function removeLegacyHanziEntries(
+  config: Record<string, any>,
+  configSection: 'mcpServers' | 'servers' | 'context_servers',
+  legacyConfigSections: ('mcpServers' | 'servers' | 'context_servers')[] = [],
+): boolean {
+  let changed = false;
+  for (const legacySection of legacyConfigSections) {
+    if (legacySection === configSection) continue;
+    const section = config[legacySection];
+    if (section && typeof section === 'object' && section['hanzi-browser']) {
+      delete section['hanzi-browser'];
+      changed = true;
+      if (Object.keys(section).length === 0) delete config[legacySection];
+    }
+  }
+  return changed;
+}
+
 export function mergeJsonConfigAtKey(
   configPath: string,
   configSection: 'mcpServers' | 'servers' | 'context_servers',
   deps: JsonConfigDeps = {},
+  legacyConfigSections: ('mcpServers' | 'servers' | 'context_servers')[] = [],
 ): SetupResult {
   const agentName = configPath;
   const pathExists = deps.pathExists ?? existsSync;
@@ -298,9 +320,15 @@ export function mergeJsonConfigAtKey(
       }
     }
 
+    const removedLegacyEntry = removeLegacyHanziEntries(config, configSection, legacyConfigSections);
+
     if (config[configSection]?.["hanzi-browser"]) {
       const existing = config[configSection]["hanzi-browser"];
       if (existing.command === MCP_ENTRY.command && JSON.stringify(existing.args) === JSON.stringify(MCP_ENTRY.args)) {
+        if (removedLegacyEntry) {
+          writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
+          return { agent: agentName, status: 'configured', detail: `migrated legacy hanzi-browser entry in ${configPath}` };
+        }
         return { agent: agentName, status: 'already-configured', detail: configPath };
       }
     }
@@ -626,6 +654,7 @@ async function injectManagedKey(apiKey: string, agents: AgentConfig[]): Promise<
           const raw = readFileSync(configPath, 'utf-8');
           const config = JSON.parse(raw);
           const configSection = agent.configSection ?? 'mcpServers';
+          removeLegacyHanziEntries(config, configSection, agent.legacyConfigSections ?? []);
           if (config[configSection]?.["hanzi-browser"]) {
             config[configSection]["hanzi-browser"] = managedEntry;
             writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
@@ -946,7 +975,12 @@ export async function runSetup(options: { only?: string; yes?: boolean } = {}): 
     if (agent.method === 'cli-command') {
       result = runClaudeCodeSetup();
     } else {
-      result = mergeJsonConfigAtKey(agent.configPath!(), agent.configSection ?? 'mcpServers');
+      result = mergeJsonConfigAtKey(
+        agent.configPath!(),
+        agent.configSection ?? 'mcpServers',
+        {},
+        agent.legacyConfigSections ?? [],
+      );
     }
     results.push({ ...result, agent: agent.name });
     await sleep(150);
