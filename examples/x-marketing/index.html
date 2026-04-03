@@ -333,6 +333,12 @@ async function startFlow() {
   const desc = $('f-desc').value.trim();
   if (!name) return toast('Enter a product name');
 
+  // If user provided a URL, ensure browser is connected so we can read it
+  if (url && !sid) {
+    const browserSid = await ensureBrowser();
+    if (!browserSid) return toast('Browser needed to read your website');
+  }
+
   screen = 'working';
   const steps = [
     { label: 'Analyzing your product', done: false, active: true },
