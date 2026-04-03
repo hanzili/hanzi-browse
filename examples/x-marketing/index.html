@@ -427,6 +427,18 @@ async function startFlow() {
 // ── Strategy review ──
 function renderStrategy() {
   const p = product;
+  const log = getEngagementLog();
+  const now = Date.now();
+  const keywordStats = {};
+  for (const entry of log) {
+    if (!entry.keyword) continue;
+    const k = entry.keyword.toLowerCase();
+    if (!keywordStats[k]) keywordStats[k] = { total: 0, today: 0, week: 0 };
+    keywordStats[k].total++;
+    const age = now - new Date(entry.posted_at).getTime();
+    if (age < 86400000) keywordStats[k].today++;
+    if (age < 604800000) keywordStats[k].week++;
+  }
   $('app').innerHTML = `
     <h1>Your strategy</h1>
     <p class="subtitle">Review keywords, then we'll search X.</p>
@@ -435,7 +447,11 @@ function renderStrategy() {
       <div style="margin-bottom:12px">
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Keywords <span style="font-weight:400">(click to remove)</span></div>
         <div class="chips" role="list" aria-label="Search keywords">
-          ${(p.keywords || []).map((k, i) => `<span class="chip" role="button" tabindex="0" aria-label="Remove ${esc(k)}" onclick="removeKeyword(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();removeKeyword(${i})}">${esc(k)} <span aria-hidden="true" style="margin-left:4px;opacity:0.5">&times;</span></span>`).join('')}
+          ${(p.keywords || []).map((k, i) => {
+            const stats = keywordStats[k.toLowerCase()];
+            const hint = stats ? (stats.today > 0 ? stats.today + ' today' : stats.week > 0 ? stats.week + ' this week' : stats.total + ' all-time') : '';
+            return `<span class="chip" role="button" tabindex="0" aria-label="Remove ${esc(k)}" onclick="removeKeyword(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();removeKeyword(${i})}">${esc(k)}${hint ? ` <span style="color:var(--muted);font-size:11px;font-weight:400">(${hint})</span>` : ''} <span aria-hidden="true" style="margin-left:4px;opacity:0.5">&times;</span></span>`;
+          }).join('')}
         </div>
         <div style="margin-top:8px;display:flex;gap:6px">
           <input id="new-keyword" placeholder="Add keyword..." aria-label="New keyword" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;background:var(--surface);color:var(--ink);outline:none;min-height:44px" onkeydown="if(event.key==='Enter'){addKeyword()}" />
@@ -624,6 +640,9 @@ async function startSearch() {
       return;
     }
 
+    const searchKeywords = keywords.join(', ');
+    for (const d of allDrafts) d._searchKeywords = searchKeywords;
+
     save();
     toast(allDrafts.length + ' drafts ready!');
     screen = 'feed';
@@ -744,6 +763,7 @@ function renderFeed() {
         ${actionable > 0 && posted.length > 0 ? ', ' : ''}
         ${posted.length > 0 ? posted.length + ' posted' : ''}
         ${actionable === 0 && posted.length === 0 && failed.length > 0 ? failed.length + ' failed' : ''}
+        ${(() => { const total = getEngagementLog().length; return total > 0 ? ` &middot; ${total} all-time` : ''; })()}
       </div>
       <div style="display:flex;gap:6px">
         ${pending.length > 0 ? `<button class="btn btn-approve btn-sm" onclick="approveAll()">Approve all</button>` : ''}
@@ -942,7 +962,7 @@ async function postAll() {
     if (r.status === 'fulfilled' && r.value?.result === 'complete') {
       approved[i].status = 'posted';
       approved[i].posted_at = new Date().toISOString();
-      logEngagement(approved[i]);
+      logEngagement(approved[i], approved[i]._searchKeywords);
       ok++;
     } else {
       approved[i].status = 'failed';
@@ -972,7 +992,7 @@ async function retryPost(id) {
     reply_text: d.reply_text,
   });
   if (result && result.result === 'complete') {
-    d.status = 'posted'; d.posted_at = new Date().toISOString(); logEngagement(d); toast('Posted!');
+    d.status = 'posted'; d.posted_at = new Date().toISOString(); logEngagement(d, d._searchKeywords); toast('Posted!');
   } else {
     d.status = 'failed'; toast('Failed');
   }
