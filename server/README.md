@@ -6,7 +6,7 @@ the Chrome extension over the local WebSocket relay.
 ## Setup
 
 ```bash
-cd mcp-server
+cd server
 npm install
 npm run build
 ```
