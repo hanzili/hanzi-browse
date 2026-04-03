@@ -65,7 +65,7 @@ Search each platform sequentially. For each platform:
 |----------|-----|-------|
 | Zillow | https://www.zillow.com/homes/for_rent/ | See site-patterns/zillow.com.md |
 | Apartments.com | https://www.apartments.com/ | See site-patterns/apartments-com.md |
-| Craigslist | https://[city].craigslist.org/search/apa | See site-patterns/craigslist.md |
+| Craigslist | https://[city].craigslist.org/search/apa | See site-patterns/craigslist.org.md |
 | Redfin | https://www.redfin.com/apartments-for-rent | Good for map-based search |
 
 After searching all platforms, proceed to Phase 2.
@@ -163,12 +163,13 @@ I'm looking to move in around [date] and would love to schedule a viewing.
 - Contact is always via email (anonymized relay) — no built-in application
 - Listings have no photos sometimes — flag these as higher risk
 - Sort by "newest" to avoid stale listings
-- See `server/site-patterns/craigslist.md` for interaction details
+- See `server/site-patterns/craigslist.org.md` for interaction details
 
 ### Redfin
 - Strong map interface — good for comparing by commute/neighborhood
 - "Rental estimate" feature helps validate if price is fair for the area
 - Contact goes through a Redfin agent form
+- No site-pattern file yet — use general navigation and fall back to standard inquiry flow
 
 ---
 
@@ -208,3 +209,4 @@ Next steps:
 - Log all contacted listings to `~/.hanzi-browse/apartment-contacts.txt` to avoid duplicates
 - Take screenshots after each platform search and after each inquiry sent
 - If a listing URL goes dead (404), note it in the table as "listing removed"
+- If you encounter a CAPTCHA or rate limit on any platform, stop immediately and tell the user — do not attempt to solve or bypass it

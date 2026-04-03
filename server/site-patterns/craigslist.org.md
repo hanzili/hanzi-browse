@@ -2,8 +2,9 @@
 domain: craigslist.org
 aliases: [Craigslist, craigslist]
 updated: 2026-04-01
-verified: false
 ---
+
+> **Note:** These patterns are documented from known site behavior and have not been tested in a live browser session. Treat as a best-effort guide; verify behavior and report deviations.
 
 ## Platform traits
 - City-specific subdomains: `[city].craigslist.org`
