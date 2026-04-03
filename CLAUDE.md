@@ -26,7 +26,7 @@ Both paths require the same infrastructure: Chrome extension + site patterns + L
                        │ WebSocket (ws://localhost:7862)
               ┌────────▼────────┐
               │  Chrome Extension│  src/background/service-worker.js
-              │  (service worker)│  13 tool handlers, CDP, DOM service
+              │  (service worker)│  10 tool handlers, CDP, DOM service
               └────────┬────────┘
                        │ Chrome DevTools Protocol
               ┌────────▼────────┐
@@ -44,11 +44,11 @@ Partner app → REST API (api.hanzilla.co) → Agent loop on server → Extensio
 | Path | What | Key files |
 |------|------|-----------|
 | `src/background/` | Chrome extension core | `service-worker.js`, `modules/mcp-bridge.js`, `modules/api.js`, `modules/cdp-helper.js` |
-| `src/background/tool-handlers/` | 13 browser tools | `computer-core.js`, `navigation-core.js`, `form-core.js`, `read-page-core.js`, `utility-core.js` |
+| `src/background/tool-handlers/` | 10 browser tools | `computer-core.js`, `navigation-core.js`, `form-core.js`, `read-page-core.js`, `utility-core.js` |
 | `src/background/managers/` | Tab, debugger, DOM, license | `tab-manager.js`, `debugger-manager.js`, `dom-service/` |
 | `server/src/` | MCP server + CLI | `index.ts` (MCP), `cli.ts` (CLI), `agent/loop.ts` (agent loop) |
 | `server/src/llm/` | LLM providers | `client.ts` (unified), `vertex.ts` (Vertex AI), `credentials.ts` (key detection) |
-| `server/src/managed/` | REST API backend | `api.ts` (73KB, main API), `store-pg.ts` (Postgres), `schema.sql`, `deploy.ts` |
+| `server/src/managed/` | REST API backend | `api.ts` (~57KB, main API), `store-pg.ts` (Postgres), `schema.sql`, `deploy.ts` |
 | `server/skills/` | Agent skills (markdown) | Each skill is a `SKILL.md` with instructions |
 | `server/site-patterns/` | Domain interaction patterns | `x.com.md` — verified patterns for complex sites |
 | `sdk/src/` | TypeScript client | `index.ts` — HanziClient class |
@@ -79,6 +79,7 @@ Skills are markdown files (`SKILL.md`) that teach AI agents when and how to use 
 | `linkedin-prospector` | Find and connect with prospects |
 | `a11y-auditor` | Run accessibility audits |
 | `x-marketer` | X/Twitter marketing |
+| `data-extractor` | Extract structured data from web pages |
 
 Each skill can also be built as a free tool (web app). The skill provides instructions for local agents; the free tool provides a hosted UI for anyone.
 
@@ -104,6 +105,10 @@ node server/dist/cli.js start "task" --url <url> --context "extra"
 node server/dist/cli.js status [session_id]
 node server/dist/cli.js message <session_id> "follow-up"
 node server/dist/cli.js stop <session_id> [--remove]
+node server/dist/cli.js logs [session_id]
+node server/dist/cli.js screenshot <session_id>
+node server/dist/cli.js skills
+node server/dist/cli.js setup
 ```
 
 ### Development
@@ -124,7 +129,7 @@ make stop     # Stop Postgres
 
 Production: Neon Postgres. Schema: `server/src/managed/schema.sql`.
 Development: Docker Postgres on port 5433.
-Tables: workspaces, api_keys, browser_sessions, task_runs, task_steps, usage_events, automations, automation_drafts, engagement_log.
+Tables: user, session, account, verification (Better Auth), workspaces, api_keys, pairing_tokens, browser_sessions, task_runs, task_steps, usage_events, workspace_members, automations, automation_drafts, engagement_log.
 
 ### Deployment
 

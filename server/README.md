@@ -6,7 +6,7 @@ the Chrome extension over the local WebSocket relay.
 ## Setup
 
 ```bash
-cd mcp-server
+cd server
 npm install
 npm run build
 ```
@@ -171,8 +171,8 @@ In Claude Code, use the built-in `linkedin-prospector` prompt from the MCP promp
 ## Skills CLI
 
 ```bash
-hanzi-browser skills                              # list available skills
-hanzi-browser skills install linkedin-prospector   # install SKILL.md to your project
+hanzi-browse skills                              # list available skills
+hanzi-browse skills install linkedin-prospector   # install SKILL.md to your project
 ```
 
 Skills are portable SKILL.md files for agents that don't support MCP prompts (Cline, Codex). Each skill follows the same principle: use existing tools first, Hanzi only for real browser steps.

@@ -108,6 +108,7 @@ Installed automatically during `npx hanzi-browse setup`. Your agent reads these 
 | `linkedin-prospector` | Find prospects, send personalized connection requests |
 | `a11y-auditor` | Run accessibility audits in a real browser |
 | `x-marketer` | Twitter/X marketing workflows |
+| `data-extractor` | Extract structured data from websites into CSV or JSON |
 
 Open source — [add your own](https://github.com/hanzili/hanzi-browse/tree/main/server/skills).
 
