@@ -61,7 +61,6 @@ const hanziClient = new HanziClient({
   baseUrl: HANZI_URL,
 });
 
-// Load X.com site patterns for browser tasks
 const HTML = readFileSync(join(__dirname, "index.html"), "utf-8");
 
 // ── Rate Limiting (per IP, resets daily) ─────────────────────

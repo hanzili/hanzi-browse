@@ -49,6 +49,11 @@ export interface TaskRun {
   browserSessionId?: string;
   createdAt: number;
   completedAt?: number;
+  turns?: Array<{
+    step: number;
+    tools: Array<{ name: string; input: Record<string, any>; result: string; durationMs: number }>;
+    ai_response: string | null;
+  }>;
 }
 
 export interface BrowserSession {
@@ -326,6 +331,7 @@ export class HanziClient {
       browserSessionId: data.browser_session_id ?? data.browserSessionId,
       createdAt: data.created_at ?? data.createdAt,
       completedAt: data.completed_at ?? data.completedAt,
+      turns: data.turns || undefined,
     };
   }
 }

@@ -653,6 +653,10 @@ async function handleMcpCommand(command) {
         type: 'TASK_COMPLETE',
         result: command.answer || 'Done',
       }).catch(() => {});
+      // Clean up tab mapping for this task
+      if (command.taskId) {
+        managedSessionTabs.delete(command.taskId);
+      }
       // Hide overlay on ALL tabs
       try {
         const allTabs = await chrome.tabs.query({});

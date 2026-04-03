@@ -211,6 +211,7 @@ export class HanziClient {
             browserSessionId: data.browser_session_id ?? data.browserSessionId,
             createdAt: data.created_at ?? data.createdAt,
             completedAt: data.completed_at ?? data.completedAt,
+            turns: data.turns || undefined,
         };
     }
 }

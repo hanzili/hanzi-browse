@@ -48,6 +48,16 @@ export interface TaskRun {
     browserSessionId?: string;
     createdAt: number;
     completedAt?: number;
+    turns?: Array<{
+        step: number;
+        tools: Array<{
+            name: string;
+            input: Record<string, any>;
+            result: string;
+            durationMs: number;
+        }>;
+        ai_response: string | null;
+    }>;
 }
 export interface BrowserSession {
     id: string;
