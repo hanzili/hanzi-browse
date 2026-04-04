@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Accessibility in a Real Browser with AI — Hanzi A11y Auditor</title>
+
+    <meta name="description" content="Run real WCAG accessibility audits with your AI agent in your signed-in browser. Check contrast, focus indicators, ARIA labels, keyboard navigation, and get actionable remediation steps with screenshots.">
+    <link rel="canonical" href="https://browse.hanzilla.co/a11y-auditor.html">
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <meta property="og:title" content="Audit Accessibility in a Real Browser with AI — Hanzi A11y Auditor">
+    <meta property="og:description" content="Your AI agent opens a real browser, checks contrast ratios, keyboard navigation, ARIA semantics, and returns a WCAG audit report with screenshots and specific fixes.">
+    <meta property="og:image" content="https://browse.hanzilla.co/og.png">
+    <meta property="og:url" content="https://browse.hanzilla.co/a11y-auditor.html">
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Audit Accessibility in a Real Browser with AI — Hanzi A11y Auditor">
+    <meta name="twitter:description" content="Your AI agent opens a real browser, checks contrast ratios, keyboard navigation, ARIA semantics, and returns a WCAG audit report with screenshots and specific fixes.">
+    <meta name="twitter:image" content="https://browse.hanzilla.co/og.png">
+
+    <style>
+        :root {
+            --bg: #f7f3ea;
+            --surface: #fffdf8;
+            --surface-2: #f3ede2;
+            --ink: #1f1711;
+            --muted: #6d6256;
+            --line: #e5ddd0;
+            --accent: #ad5a34;
+            --accent-dark: #8d4524;
+            --green: #2f4a3d;
+            --shadow: 0 16px 40px rgba(54, 38, 23, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(233, 199, 146, 0.22), transparent 28%),
+                radial-gradient(circle at top right, rgba(154, 191, 170, 0.18), transparent 26%),
+                var(--bg);
+            color: var(--ink);
+            font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 28px 0 18px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        .brand-mark { width: 26px; height: 26px; flex-shrink: 0; }
+
+        .header-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+        .btn, .link-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+        }
+
+        .btn:hover, .link-pill:hover { transform: translateY(-1px); }
+
+        .btn-primary {
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        }
+
+        h1, h2 {
+            font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+            letter-spacing: -0.05em;
+        }
+
+        /* Hero */
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 42px;
+            align-items: center;
+            padding: 34px 0 44px;
+        }
+
+        h1 {
+            margin-top: 12px;
+            font-size: clamp(2.6rem, 6vw, 4.4rem);
+            line-height: 0.95;
+        }
+
+        .hero-copy p {
+            max-width: 520px;
+            margin-top: 18px;
+            font-size: 18px;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .hero-copy strong { color: var(--ink); }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid #e9d5c8;
+            background: #fcf4ee;
+            color: var(--accent-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .demo-panel {
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Sections */
+        .section {
+            padding: 56px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .section-kicker {
+            color: var(--accent-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            margin-top: 10px;
+            font-size: clamp(2.1rem, 4vw, 3.3rem);
+            line-height: 0.96;
+        }
+
+        /* Steps */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        .step-card {
+            padding: 22px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--surface);
+        }
+
+        .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            margin-bottom: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .step-card h3 {
+            font-size: 18px;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .step-card p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        /* Goals */
+        .goals-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 28px;
+        }
+
+        .goal-chip {
+            padding: 12px 18px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--surface);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .goal-chip span {
+            margin-right: 6px;
+        }
+
+        /* Differentiators */
+        .diff-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        .diff-card {
+            padding: 22px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--surface);
+        }
+
+        .diff-card h3 {
+            font-size: 18px;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .diff-card p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        /* CTA */
+        .cta-band {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 20px;
+            align-items: center;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: linear-gradient(135deg, #fffdf8 0%, #f2eadf 100%);
+        }
+
+        .setup-copy {
+            position: relative;
+            padding: 16px 16px 18px;
+            border-radius: 16px;
+            background: #241c17;
+        }
+
+        .setup-copy pre {
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #f4e8d8;
+            font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            padding-right: 60px;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #9a8a78;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 140ms ease, color 140ms ease;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.18);
+            color: #f4e8d8;
+        }
+
+        .tab:hover { background: rgba(255, 255, 255, 0.14); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .setup-copy .dim { color: #6d5e50; }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #f4e8d8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 30px 0 40px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
+
+        @media (max-width: 980px) {
+            .hero, .steps-grid, .diff-grid, .cta-band { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            .page { width: min(100% - 24px, 1120px); }
+            header { padding-top: 20px; }
+            .header-links { flex-direction: column; align-items: stretch; }
+            .btn, .link-pill { width: 100%; }
+            h1 { font-size: clamp(2.4rem, 14vw, 3.6rem); }
+            .hero-copy p { font-size: 16px; }
+            .section { padding: 44px 0; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <a class="brand" href="index.html">
+                <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="24" height="24" rx="6" fill="#1f1711"/>
+                    <path d="M7 7v10M17 7v10M7 12h10" stroke="#fffdf8" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+                Hanzi
+            </a>
+            <nav class="header-links" aria-label="Main navigation">
+                <a class="link-pill" href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer">GitHub</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-copy">
+                    <div class="eyebrow">Skill</div>
+                    <h1>WCAG audits in a real browser, not a simulator.</h1>
+                    <p>One command. Your AI agent scans your codebase for ARIA and semantic issues, then opens your real browser to check contrast, focus indicators, keyboard navigation, and screen reader semantics. <strong>You get screenshots and specific remediation steps, not abstract warnings.</strong></p>
+                    <div style="margin-top: 24px; max-width: 520px;">
+                        <div class="setup-copy" style="margin-top: 0;">
+                            <div class="tab-bar" role="tablist" aria-label="Setup mode">
+                                <button class="tab active" id="tab-mcp" role="tab" aria-selected="true" aria-controls="panel-mcp" onclick="switchTab(this, 'mcp')">Claude Code / Cursor</button>
+                                <button class="tab" id="tab-cli" role="tab" aria-selected="false" aria-controls="panel-cli" onclick="switchTab(this, 'cli')">Codex / CLI</button>
+                            </div>
+                            <div class="tab-content active" id="panel-mcp" role="tabpanel" aria-labelledby="tab-mcp" data-tab="mcp">
+                                <pre><span class="dim">$</span> npx hanzi-browse setup
+<span class="dim">$</span> /a11y-auditor</pre>
+                            </div>
+                            <div class="tab-content" id="panel-cli" role="tabpanel" aria-labelledby="tab-cli" data-tab="cli" hidden>
+                                <pre><span class="dim">$</span> npx hanzi-browse setup
+<span class="dim">$</span> hanzi-browser start "audit accessibility on my homepage" --skill a11y-auditor</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-panel">
+                    <div style="padding: 40px 32px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">&#9855;</div>
+                        <h3 style="font-size: 20px; margin-bottom: 8px;">Real-Browser Accessibility Auditing</h3>
+                        <p style="color: var(--muted); font-size: 15px; line-height: 1.65; max-width: 360px; margin: 0 auto;">Your AI agent checks contrast ratios, tab order, focus indicators, ARIA labels, and semantic HTML against WCAG 2.1 AA — in a real browser with real rendering.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">How it works</div>
+                    <h2>Four phases. One comprehensive audit.</h2>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h3>Reviews your codebase first</h3>
+                        <p>Before opening the browser, it scans for ARIA usage, semantic HTML, image alt text, form labels, and heading hierarchy in your source code.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h3>Checks visual accessibility</h3>
+                        <p>Opens the page in a real browser and verifies color contrast ratios (4.5:1 for normal text, 3:1 for large), font sizes, and touch target dimensions.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h3>Tests keyboard navigation</h3>
+                        <p>Tabs through the entire page to verify tab order, focus indicators, focus traps in modals, skip links, and keyboard operability of interactive elements.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">4</div>
+                        <h3>Validates ARIA and semantics</h3>
+                        <p>Verifies landmarks, form label associations, dynamic content announcements with aria-live, accessible names for images and icons, and table headers.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">5</div>
+                        <h3>Screenshots every issue</h3>
+                        <p>Each finding is captured with a screenshot showing the exact element, its location, the WCAG criterion violated, and the impact on users.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">6</div>
+                        <h3>Delivers a prioritized report</h3>
+                        <p>Issues are categorized as Critical, Serious, Moderate, or Minor. Each includes a specific fix, file location, and complexity estimate so you can triage fast.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">What it checks</div>
+                    <h2>Real checks, real rendering.</h2>
+                </div>
+                <div class="goals-row">
+                    <div class="goal-chip"><span>&#128065;</span> Color contrast ratios</div>
+                    <div class="goal-chip"><span>&#9000;</span> Keyboard navigation</div>
+                    <div class="goal-chip"><span>&#128269;</span> Focus indicators</div>
+                    <div class="goal-chip"><span>&#127991;</span> ARIA labels &amp; roles</div>
+                    <div class="goal-chip"><span>&#128196;</span> Semantic HTML</div>
+                    <div class="goal-chip"><span>&#128247;</span> Image alt text</div>
+                    <div class="goal-chip"><span>&#128221;</span> Form labels</div>
+                    <div class="goal-chip"><span>&#128290;</span> Heading hierarchy</div>
+                    <div class="goal-chip"><span>&#128260;</span> Skip links</div>
+                    <div class="goal-chip"><span>&#128690;</span> Touch targets (24x24px)</div>
+                    <div class="goal-chip"><span>&#127916;</span> Motion &amp; animation</div>
+                    <div class="goal-chip"><span>&#128483;</span> aria-live regions</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div>
+                    <div class="section-kicker">Why this is different</div>
+                    <h2>Not just a static linter.</h2>
+                </div>
+                <div class="diff-grid">
+                    <div class="diff-card">
+                        <h3>Real browser, real rendering</h3>
+                        <p>Static analysis tools miss computed contrast, dynamic focus states, and JavaScript-driven ARIA. This audits what users actually experience in a real Chrome instance.</p>
+                    </div>
+                    <div class="diff-card">
+                        <h3>Code-aware remediation</h3>
+                        <p>Each issue maps back to your source files with a specific fix and complexity estimate. Not just "fix contrast" but which file, which element, and what value.</p>
+                    </div>
+                    <div class="diff-card">
+                        <h3>Works with your existing tools</h3>
+                        <p>Claude Code, Codex, Cursor, and other MCP clients can run it. No custom a11y framework required. Integrates into your development workflow as-is.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="cta-band">
+                    <div>
+                        <div class="section-kicker">Get started</div>
+                        <h2>One command. Start auditing.</h2>
+                    </div>
+                    <div class="setup-copy">
+                        <pre>npx hanzi-browse setup</pre>
+                        <button class="copy-btn" data-copy="npx hanzi-browse setup" onclick="copyData(this)">Copy</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div>Give your AI agent a real browser.</div>
+            <div class="footer-links">
+                <a href="https://github.com/hanzili/hanzi-browse" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://www.npmjs.com/package/hanzi-browse" target="_blank" rel="noreferrer">npm</a>
+                <a href="https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd" target="_blank" rel="noreferrer">Chrome Web Store</a>
+                <a href="https://x.com/hanzi_li" target="_blank" rel="noreferrer">Twitter</a>
+                <a href="https://www.linkedin.com/in/hanzi-li-mcgill/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a href="mailto:hanzili0217@gmail.com">Contact</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        async function copyData(button) {
+            const original = button.textContent;
+            try {
+                await navigator.clipboard.writeText(button.dataset.copy || '');
+                button.textContent = 'Copied';
+            } catch (_) {
+                button.textContent = 'Copy failed';
+            }
+            setTimeout(() => {
+                button.textContent = original;
+            }, 1500);
+        }
+
+        function switchTab(button, tabId) {
+            const bar = button.closest('.setup-copy');
+            bar.querySelectorAll('.tab').forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
+            bar.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.setAttribute('hidden', '');
+            });
+            button.classList.add('active');
+            button.setAttribute('aria-selected', 'true');
+            const panel = bar.querySelector(`[data-tab="${tabId}"]`);
+            panel.classList.add('active');
+            panel.removeAttribute('hidden');
+        }
+    </script>
+</body>
+</html>
