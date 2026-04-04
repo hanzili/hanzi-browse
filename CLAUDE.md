@@ -10,7 +10,7 @@ Two distribution paths:
 - **Skills** — for users who run Hanzi locally via their AI agent (Claude Code, Cursor, etc.)
 - **Free tools** — public web apps that demonstrate use cases (e.g. tools.hanzilla.co/x-marketing)
 
-Both paths require the same infrastructure: Chrome extension + site patterns + LLM.
+Both paths require the same infrastructure: Chrome extension + domain knowledge + LLM.
 
 ### Architecture
 
@@ -50,7 +50,7 @@ Partner app → REST API (api.hanzilla.co) → Agent loop on server → Extensio
 | `server/src/llm/` | LLM providers | `client.ts` (unified), `vertex.ts` (Vertex AI), `credentials.ts` (key detection) |
 | `server/src/managed/` | REST API backend | `api.ts` (73KB, main API), `store-pg.ts` (Postgres), `schema.sql`, `deploy.ts` |
 | `server/skills/` | Agent skills (markdown) | Each skill is a `SKILL.md` with instructions |
-| `server/site-patterns/` | Domain interaction patterns | `x.com.md` — verified patterns for complex sites |
+| `server/src/agent/domain-knowledge.ts` | Domain interaction patterns | Verified patterns for 17 domains (x.com, linkedin.com, reddit.com, gmail, github, etc.) |
 | `sdk/src/` | TypeScript client | `index.ts` — HanziClient class |
 | `landing/` | Marketing site (static HTML) | `index.html`, `docs.html`, `embed.js` |
 | `examples/` | Demo apps | `x-marketing/` (free tool), `partner-quickstart/` (API demo) |
@@ -82,13 +82,13 @@ Skills are markdown files (`SKILL.md`) that teach AI agents when and how to use 
 
 Each skill can also be built as a free tool (web app). The skill provides instructions for local agents; the free tool provides a hosted UI for anyone.
 
-### Site patterns
+### Domain knowledge
 
-Domain-specific interaction patterns in `server/site-patterns/`. These document verified procedures for tricky sites (Draft.js text input, async page loading, anti-bot handling, etc.).
+Domain-specific interaction patterns in `server/src/agent/domain-knowledge.ts`. These document verified procedures for tricky sites (Draft.js text input, async page loading, anti-bot handling, etc.). Covers 17 domains including x.com, linkedin.com, reddit.com, mail.google.com, github.com, and more.
 
-Currently: `x.com.md` — detailed patterns for X/Twitter search, reply, and text input.
+Domain knowledge is injected into the agent's system prompt when the task URL matches a known domain. This prevents the agent from making known mistakes (e.g., using `form_input` on Draft.js, which silently fails).
 
-Site patterns are loaded into the agent's system prompt when tasks target that domain. They prevent the agent from making known mistakes (e.g., using `form_input` on Draft.js, which silently fails).
+The extension-side equivalent lives in `src/background/modules/domain-skills.js` and is used for local/sidepanel mode.
 
 ### Build
 

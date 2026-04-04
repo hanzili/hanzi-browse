@@ -19,7 +19,7 @@ import { buildSystemPrompt } from "./system-prompt.js";
 // --- Agent Loop ---
 export async function runAgentLoop(params) {
     const { task, url, context, executeTool, onStep, onText, maxSteps = 50, signal, } = params;
-    const system = buildSystemPrompt();
+    const system = buildSystemPrompt(url);
     const tools = AGENT_TOOLS;
     const messages = [];
     let totalUsage = { inputTokens: 0, outputTokens: 0, apiCalls: 0 };
@@ -70,8 +70,12 @@ export async function runAgentLoop(params) {
         totalUsage.outputTokens += response.usage?.output_tokens || 0;
         if (response.model)
             lastModel = response.model;
-        // Add assistant response to conversation
-        messages.push({ role: "assistant", content: response.content });
+        // Add assistant response to conversation (preserve raw Gemini parts for thought signatures)
+        const assistantMsg = { role: "assistant", content: response.content };
+        if (response._rawGeminiParts) {
+            assistantMsg._rawGeminiParts = response._rawGeminiParts;
+        }
+        messages.push(assistantMsg);
         // Extract text and tool calls
         const textBlocks = response.content.filter((b) => b.type === "text");
         const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");

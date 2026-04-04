@@ -90,7 +90,7 @@ export async function runAgentLoop(
     signal,
   } = params;
 
-  const system = buildSystemPrompt();
+  const system = buildSystemPrompt(url);
   const tools = AGENT_TOOLS;
   const messages: Message[] = [];
   let totalUsage = { inputTokens: 0, outputTokens: 0, apiCalls: 0 };
