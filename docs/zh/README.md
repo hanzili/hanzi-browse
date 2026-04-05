@@ -1,7 +1,5 @@
 <div align="center">
 
-[English](../../README.md) | [中文](README.md)
-
 <img src="../logo.svg" width="80" alt="Hanzi Browse" />
 
 # Hanzi Browse
@@ -103,7 +101,6 @@ npx hanzi-browse setup
 | `social-poster` | 按不同平台改写文案，并用你已登录的账号发布 |
 | `linkedin-prospector` | 寻找潜在客户或候选人，并发送个性化连接请求 |
 | `a11y-auditor` | 在真实浏览器里执行无障碍检查 |
-| `data-extractor` | 从网站中提取结构化数据，输出为 CSV/JSON |
 | `x-marketer` | 面向 Twitter / X 的营销工作流 |
 
 开源可扩展，你也可以[自己写技能](https://github.com/hanzili/hanzi-browse/tree/main/server/skills)。
@@ -146,7 +143,7 @@ console.log(result.answer);
 | `browser_message` | 向现有会话发送后续指令 |
 | `browser_status` | 查询任务进度 |
 | `browser_stop` | 停止任务 |
-| `browser_screenshot` | 截取当前页面 |
+| `browser_screenshot` | 把当前页面截成 PNG |
 
 <br/>
 
@@ -207,48 +204,7 @@ make dev
 
 ### 手动加载扩展
 
-打开 `chrome://extensions`，开启 Developer Mode，点击 “Load unpacked”，选择仓库根目录（包含 `manifest.json` 的文件夹）。
-
-### 验证一切正常
-
-`make dev` 启动后，加载好扩展，分别测试两条路径：
-
-**测试 1：MCP / CLI 模式（用户路径）**
-
-```bash
-# 在另一个终端运行：
-node server/dist/cli.js start “Go to example.com and tell me the page title”
-```
-
-应该会看到 Chrome 窗口打开，agent 导航到 example.com，然后返回页面标题。如果成功，说明 relay + 扩展 + agent loop 全部连通。
-
-**测试 2：Managed API 模式（开发者路径）**
-
-```bash
-# 1. 检查 API 是否在运行
-curl http://localhost:3456/v1/health
-
-# 2. 打开 Dashboard 并登录（需要配置 Google OAuth）
-open http://localhost:3456/dashboard
-
-# 3. 在 Dashboard 里创建 API key，然后：
-curl -X POST http://localhost:3456/v1/browser-sessions/pair \
-  -H “Authorization: Bearer YOUR_API_KEY” \
-  -H “Content-Type: application/json”
-
-# 4. 在 Chrome 里打开配对链接（从返回结果中获取）
-open “http://localhost:3456/pair/PAIRING_TOKEN”
-
-# 5. 配对完成后，发起任务
-curl -X POST http://localhost:3456/v1/tasks \
-  -H “Authorization: Bearer YOUR_API_KEY” \
-  -H “Content-Type: application/json” \
-  -d '{“task”: “Go to example.com and read the title”, “browser_session_id”: “SESSION_ID”}'
-
-# 6. 查询结果
-curl http://localhost:3456/v1/tasks/TASK_ID \
-  -H “Authorization: Bearer YOUR_API_KEY”
-```
+打开 `chrome://extensions`，开启 Developer Mode，点击 “Load unpacked”，选择仓库根目录下的 `dist/` 文件夹。
 
 <br/>
 

@@ -76,13 +76,3 @@ docs/internal/*
 !docs/internal/MCP_STATUS.md
 .env
 vertex-sa.json
-
-# Build artifacts and release archives
-*.zip
-
-# Demo recordings and pitch materials
-*.webm
-*.mkv
-*.mp4
-pitchdeck.*
-readme-preview.html

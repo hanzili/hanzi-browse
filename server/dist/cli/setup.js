@@ -65,15 +65,12 @@ const MCP_ENTRY = {
     args: ['-y', 'hanzi-browse'],
 };
 // ── Agent registry ─────────────────────────────────────────────────────
-export function getAgentRegistry(deps = {}) {
-    const home = deps.home ?? homedir();
-    const plat = deps.plat ?? platform();
-    const appData = deps.appData ?? process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
-    const pathExists = deps.pathExists ?? existsSync;
-    const runCommand = deps.runCommand ?? execSync;
+function getAgentRegistry() {
+    const home = homedir();
+    const plat = platform();
     const hasCli = (bin) => {
         try {
-            runCommand(`which ${bin}`, { stdio: 'ignore' });
+            execSync(`which ${bin}`, { stdio: 'ignore' });
             return true;
         }
         catch {
@@ -97,7 +94,7 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.cursor', 'mcp.json'),
             skillsDir: () => join(home, '.cursor', 'skills'),
-            detect: () => pathExists(join(home, '.cursor')),
+            detect: () => existsSync(join(home, '.cursor')),
         },
         {
             name: 'Windsurf',
@@ -105,7 +102,7 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.codeium', 'windsurf', 'mcp_config.json'),
             skillsDir: () => join(home, '.codeium', 'windsurf', 'skills'),
-            detect: () => pathExists(join(home, '.codeium', 'windsurf')),
+            detect: () => existsSync(join(home, '.codeium', 'windsurf')),
         },
         {
             name: 'VS Code',
@@ -113,7 +110,7 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.vscode', 'mcp.json'),
             skillsDir: () => join(home, '.vscode', 'skills'),
-            detect: () => pathExists(join(home, '.vscode')),
+            detect: () => existsSync(join(home, '.vscode')),
         },
         {
             name: 'Codex',
@@ -121,7 +118,7 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.codex', 'mcp.json'),
             skillsDir: () => join(home, '.agents', 'skills'),
-            detect: () => pathExists(join(home, '.codex')) || hasCli('codex'),
+            detect: () => existsSync(join(home, '.codex')) || hasCli('codex'),
         },
         {
             name: 'Claude Desktop',
@@ -131,15 +128,15 @@ export function getAgentRegistry(deps = {}) {
                 if (plat === 'darwin')
                     return join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
                 if (plat === 'win32')
-                    return join(appData, 'Claude', 'claude_desktop_config.json');
+                    return join(process.env.APPDATA || join(home, 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
                 return join(home, '.config', 'Claude', 'claude_desktop_config.json');
             },
             detect: () => {
                 if (plat === 'darwin')
-                    return pathExists(join(home, 'Library', 'Application Support', 'Claude'));
+                    return existsSync(join(home, 'Library', 'Application Support', 'Claude'));
                 if (plat === 'win32')
-                    return pathExists(join(appData, 'Claude'));
-                return pathExists(join(home, '.config', 'Claude'));
+                    return existsSync(join(process.env.APPDATA || join(home, 'AppData', 'Roaming'), 'Claude'));
+                return existsSync(join(home, '.config', 'Claude'));
             },
         },
         {
@@ -148,7 +145,7 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.gemini', 'settings.json'),
             skillsDir: () => join(home, '.gemini', 'skills'),
-            detect: () => pathExists(join(home, '.gemini')) || hasCli('gemini'),
+            detect: () => existsSync(join(home, '.gemini')) || hasCli('gemini'),
         },
         {
             name: 'Amp',
@@ -156,21 +153,21 @@ export function getAgentRegistry(deps = {}) {
             method: 'json-merge',
             configPath: () => join(home, '.amp', 'mcp.json'),
             skillsDir: () => join(home, '.amp', 'skills'),
-            detect: () => pathExists(join(home, '.amp')),
+            detect: () => existsSync(join(home, '.amp')),
         },
         {
             name: 'Cline',
             slug: 'cline',
             method: 'json-merge',
             configPath: () => join(home, '.cline', 'mcp_settings.json'),
-            detect: () => pathExists(join(home, '.cline')),
+            detect: () => existsSync(join(home, '.cline')),
         },
         {
             name: 'Roo Code',
             slug: 'roo-code',
             method: 'json-merge',
             configPath: () => join(home, '.roo-code', 'mcp_settings.json'),
-            detect: () => pathExists(join(home, '.roo-code')),
+            detect: () => existsSync(join(home, '.roo-code')),
         },
     ];
 }
@@ -180,21 +177,16 @@ function stripJsonComments(text) {
         .replace(/\/\/.*$/gm, '')
         .replace(/\/\*[\s\S]*?\*\//g, '');
 }
-export function mergeJsonConfig(configPath, deps = {}) {
+function mergeJsonConfig(configPath) {
     const agentName = configPath;
-    const pathExists = deps.pathExists ?? existsSync;
-    const readTextFile = deps.readTextFile ?? readFileSync;
-    const writeTextFile = deps.writeTextFile ?? writeFileSync;
-    const ensureDir = deps.ensureDir ?? mkdirSync;
-    const copyFile = deps.copyFile ?? copyFileSync;
     try {
-        if (!pathExists(configPath)) {
-            ensureDir(join(configPath, '..'), { recursive: true });
+        if (!existsSync(configPath)) {
+            mkdirSync(join(configPath, '..'), { recursive: true });
             const config = { mcpServers: { "hanzi-browser": MCP_ENTRY } };
-            writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
+            writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
             return { agent: agentName, status: 'configured', detail: `created ${configPath}` };
         }
-        const raw = readTextFile(configPath, 'utf-8');
+        const raw = readFileSync(configPath, 'utf-8');
         let config;
         try {
             config = JSON.parse(raw);
@@ -205,9 +197,9 @@ export function mergeJsonConfig(configPath, deps = {}) {
             }
             catch {
                 const bakPath = configPath + '.bak';
-                copyFile(configPath, bakPath);
+                copyFileSync(configPath, bakPath);
                 config = { mcpServers: { "hanzi-browser": MCP_ENTRY } };
-                writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
+                writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
                 return { agent: agentName, status: 'configured', detail: `backed up malformed config to ${bakPath}` };
             }
         }
@@ -220,7 +212,7 @@ export function mergeJsonConfig(configPath, deps = {}) {
         if (!config.mcpServers)
             config.mcpServers = {};
         config.mcpServers["hanzi-browser"] = MCP_ENTRY;
-        writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
+        writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
         return { agent: agentName, status: 'configured', detail: `merged into ${configPath}` };
     }
     catch (err) {
@@ -253,67 +245,20 @@ function runClaudeCodeSetup() {
 // ── Browser detection ──────────────────────────────────────────────────
 const EXTENSION_URL = 'https://chromewebstore.google.com/detail/hanzi-browse/iklpkemlmbhemkiojndpbhoakgikpmcd';
 const BROWSERS = [
-    {
-        name: 'Google Chrome',
-        slug: 'chrome',
-        macApp: 'Google Chrome',
-        linuxBin: 'google-chrome',
-        winPaths: [
-            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        ],
-    },
-    {
-        name: 'Brave',
-        slug: 'brave',
-        macApp: 'Brave Browser',
-        linuxBin: 'brave-browser',
-        winPaths: [
-            'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-            'C:\\Program Files (x86)\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-        ],
-    },
-    {
-        name: 'Microsoft Edge',
-        slug: 'edge',
-        macApp: 'Microsoft Edge',
-        linuxBin: 'microsoft-edge',
-        winPaths: [
-            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        ],
-    },
-    {
-        name: 'Arc',
-        slug: 'arc',
-        macApp: 'Arc',
-        linuxBin: 'arc',
-        winPaths: [],
-    },
-    {
-        name: 'Chromium',
-        slug: 'chromium',
-        macApp: 'Chromium',
-        linuxBin: 'chromium-browser',
-        winPaths: [
-            'C:\\Program Files\\Chromium\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Chromium\\Application\\chrome.exe',
-        ],
-    },
+    { name: 'Google Chrome', slug: 'chrome', macApp: 'Google Chrome', linuxBin: 'google-chrome' },
+    { name: 'Brave', slug: 'brave', macApp: 'Brave Browser', linuxBin: 'brave-browser' },
+    { name: 'Microsoft Edge', slug: 'edge', macApp: 'Microsoft Edge', linuxBin: 'microsoft-edge' },
+    { name: 'Arc', slug: 'arc', macApp: 'Arc', linuxBin: 'arc' },
+    { name: 'Chromium', slug: 'chromium', macApp: 'Chromium', linuxBin: 'chromium-browser' },
 ];
-export function detectBrowsers(deps = {}) {
-    const plat = deps.plat ?? platform();
-    const pathExists = deps.pathExists ?? existsSync;
-    const runCommand = deps.runCommand ?? execSync;
+function detectBrowsers() {
+    const plat = platform();
     return BROWSERS.filter(b => {
         if (plat === 'darwin') {
-            return pathExists(`/Applications/${b.macApp}.app`);
-        }
-        if (plat === 'win32') {
-            return b.winPaths.some(path => pathExists(path));
+            return existsSync(`/Applications/${b.macApp}.app`);
         }
         try {
-            runCommand(`which ${b.linuxBin}`, { stdio: 'ignore' });
+            execSync(`which ${b.linuxBin}`, { stdio: 'ignore' });
             return true;
         }
         catch {
@@ -321,36 +266,19 @@ export function detectBrowsers(deps = {}) {
         }
     });
 }
-export function resolveInteractiveMode(options = {}, stdinIsTTY = process.stdin.isTTY ?? false) {
-    return options.yes ? false : stdinIsTTY;
-}
-export function buildBrowserOpenCommand(browser, url, plat) {
-    if (plat === 'darwin') {
-        return `open -a "${browser.macApp}" "${url}"`;
-    }
-    if (plat === 'win32') {
-        const exePath = browser.winPaths.find(path => existsSync(path)) ?? browser.winPaths[0];
-        if (!exePath)
-            return `cmd /c start "" "${url}"`;
-        return `cmd /c start "" "${exePath}" "${url}"`;
-    }
-    return `${browser.linuxBin} "${url}" &`;
-}
-export function buildSystemOpenCommand(url, plat) {
-    if (plat === 'darwin')
-        return `open "${url}"`;
-    if (plat === 'win32')
-        return `cmd /c start "" "${url}"`;
-    return `xdg-open "${url}"`;
-}
 function openInBrowser(browser, url) {
     const plat = platform();
     try {
-        execSync(buildBrowserOpenCommand(browser, url, plat), { stdio: 'ignore' });
+        if (plat === 'darwin') {
+            execSync(`open -a "${browser.macApp}" "${url}"`, { stdio: 'ignore' });
+        }
+        else {
+            execSync(`${browser.linuxBin} "${url}" &`, { stdio: 'ignore' });
+        }
     }
     catch {
         // Fallback: system default
-        execSync(buildSystemOpenCommand(url, plat), { stdio: 'ignore' });
+        execSync(`open "${url}" 2>/dev/null || xdg-open "${url}" 2>/dev/null`, { stdio: 'ignore' });
     }
 }
 async function ensureExtension(isInteractive) {
@@ -772,7 +700,7 @@ export async function runSetup(options = {}) {
     trackEvent("setup_started");
     const registry = getAgentRegistry();
     const only = options.only;
-    const interactive = resolveInteractiveMode(options);
+    const interactive = options.yes ? false : (process.stdin.isTTY ?? false);
     // ── Banner ──
     if (interactive) {
         console.log(BANNER);

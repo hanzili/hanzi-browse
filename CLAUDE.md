@@ -78,7 +78,6 @@ Skills are markdown files (`SKILL.md`) that teach AI agents when and how to use 
 | `social-poster` | Post to LinkedIn/X/Reddit |
 | `linkedin-prospector` | Find and connect with prospects |
 | `a11y-auditor` | Run accessibility audits |
-| `data-extractor` | Extract structured data from websites into CSV/JSON |
 | `x-marketer` | X/Twitter marketing |
 
 Each skill can also be built as a free tool (web app). The skill provides instructions for local agents; the free tool provides a hosted UI for anyone.

@@ -105,7 +105,6 @@
 
         <div class="sidebar-section">
             <div class="sidebar-section-title">API Reference</div>
-            <a class="nav-link" href="#sdk">TypeScript SDK</a>
             <a class="nav-link" href="#authentication">Authentication</a>
             <a class="nav-link" href="#api-keys">API Keys</a>
             <a class="nav-link" href="#browser-sessions">Browser Sessions</a>
@@ -319,39 +318,6 @@ Read the codebase to understand the stack and project structure, then ask me the
             <strong>Sample app:</strong> See <a href="https://github.com/hanzili/hanzi-browse/tree/main/examples/x-marketing">examples/x-marketing</a> for a full working integration (Express + SDK + embed widget).
         </div>
 
-        <!-- ─── SDK ─── -->
-        <h2 id="sdk">TypeScript SDK</h2>
-        <p>The SDK wraps the REST API with typed methods, automatic polling, and error handling.</p>
-
-        <div class="code-block"><pre>npm install @hanzi/browser-agent</pre></div>
-
-        <div class="code-block"><pre>import { HanziClient } from '@hanzi/browser-agent';
-
-const client = new HanziClient({ apiKey: 'hic_live_...' });
-
-// 1. Create a pairing token (give the URL to your user)
-const { pairingToken } = await client.createPairingToken({
-  label: 'Dr. Smith',
-  externalUserId: 'user_123',
-});
-// Send user to: https://api.hanzilla.co/pair/{pairingToken}
-
-// 2. Check for a connected session
-const sessions = await client.listSessions();
-const connected = sessions.find(s => s.status === 'connected');
-
-// 3. Run a task (polls until complete, 5 min timeout)
-const result = await client.runTask({
-  browserSessionId: connected.id,
-  task: 'Go to example.com and read the page title',
-});
-console.log(result.answer);
-console.log(result.status); // 'complete' | 'error' | 'cancelled'</pre></div>
-
-        <p>All methods: <code>createPairingToken</code>, <code>listSessions</code>, <code>deleteSession</code>, <code>createTask</code>, <code>getTask</code>, <code>runTask</code>, <code>cancelTask</code>, <code>listTasks</code>, <code>getTaskSteps</code>, <code>getScreenshot</code>, <code>createApiKey</code>, <code>listApiKeys</code>, <code>deleteApiKey</code>, <code>getUsage</code>, <code>getCredits</code>, <code>health</code>.</p>
-
-        <p>Errors throw <code>HanziError</code> with <code>.status</code> (HTTP code) and <code>.data</code> (response body). The SDK retries transient polling errors in <code>runTask()</code> automatically.</p>
-
         <!-- ─── AUTHENTICATION ─── -->
         <h2 id="authentication">Authentication</h2>
         <p>All API endpoints (except <code>/v1/health</code>) require authentication. Two methods are supported:</p>
@@ -466,14 +432,6 @@ curl -X POST https://api.hanzilla.co/v1/browser-sessions/pair \
   ]
 }</pre></div>
 
-        <div class="endpoint">
-            <span class="endpoint-method method-delete">DELETE</span>
-            <span class="endpoint-path">/v1/browser-sessions/:id</span>
-            <div class="endpoint-desc">Delete a browser session. The user will need to re-pair.</div>
-        </div>
-        <div class="code-block"><pre>curl -X DELETE https://api.hanzilla.co/v1/browser-sessions/550e8400-... \
-  -H "Authorization: Bearer hic_live_..."</pre></div>
-
         <!-- ─── TASKS ─── -->
         <h2 id="tasks">Tasks</h2>
 
@@ -550,7 +508,7 @@ curl -X POST https://api.hanzilla.co/v1/tasks \
         <div class="endpoint">
             <span class="endpoint-method method-get">GET</span>
             <span class="endpoint-path">/v1/tasks/:id/screenshots/:step</span>
-            <div class="endpoint-desc">Get the screenshot captured at a specific step. Returns base64 JPEG.</div>
+            <div class="endpoint-desc">Get the screenshot captured at a specific step. Returns base64 PNG.</div>
         </div>
         <div class="code-block"><pre># Response (200)
 {

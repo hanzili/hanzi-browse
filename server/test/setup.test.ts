@@ -3,8 +3,6 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import {
-  buildBrowserOpenCommand,
-  buildSystemOpenCommand,
   detectBrowsers,
   getAgentRegistry,
   mergeJsonConfig,
@@ -52,20 +50,18 @@ describe('getAgentRegistry', () => {
   });
 
   it('uses the Windows APPDATA path for Claude Desktop', () => {
-    // path.join on non-Windows uses '/' — normalize for cross-platform test
-    const normalize = (p: string) => p.replace(/[\\/]/g, '/');
     const registry = getAgentRegistry({
       home: 'C:\\Users\\tester',
       plat: 'win32',
       appData: 'C:\\Users\\tester\\AppData\\Roaming',
-      pathExists: (path) => normalize(path) === 'C:/Users/tester/AppData/Roaming/Claude',
+      pathExists: (path) => path === 'C:\\Users\\tester\\AppData\\Roaming\\Claude',
       runCommand: () => { throw new Error('not installed'); },
     });
 
     const claudeDesktop = registry.find(agent => agent.slug === 'claude-desktop');
     expect(claudeDesktop?.detect()).toBe(true);
-    expect(normalize(claudeDesktop?.configPath?.() ?? ''))
-      .toBe('C:/Users/tester/AppData/Roaming/Claude/claude_desktop_config.json');
+    expect(claudeDesktop?.configPath?.())
+      .toBe('C:\\Users\\tester\\AppData\\Roaming\\Claude\\claude_desktop_config.json');
   });
 });
 
@@ -176,37 +172,6 @@ describe('detectBrowsers', () => {
     });
 
     expect(browsers.map(browser => browser.slug)).toEqual(['chrome', 'chromium']);
-  });
-
-  it('detects installed browsers on Windows by executable paths', () => {
-    const browsers = detectBrowsers({
-      plat: 'win32',
-      pathExists: (path) => [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      ].includes(path),
-    });
-
-    expect(browsers.map(browser => browser.slug)).toEqual(['chrome', 'edge']);
-  });
-});
-
-describe('browser open commands', () => {
-  it('builds a Windows browser launch command with the detected executable', () => {
-    const command = buildBrowserOpenCommand({
-      name: 'Google Chrome',
-      slug: 'chrome',
-      macApp: 'Google Chrome',
-      linuxBin: 'google-chrome',
-      winPaths: ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'],
-    }, 'https://example.com', 'win32');
-
-    expect(command).toBe('cmd /c start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" "https://example.com"');
-  });
-
-  it('builds a Windows fallback command for system default browser', () => {
-    expect(buildSystemOpenCommand('https://example.com', 'win32'))
-      .toBe('cmd /c start "" "https://example.com"');
   });
 });
 

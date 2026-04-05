@@ -31,9 +31,6 @@ const managedSessionTabs = new Map();
 // Stop flag — when true, reject all incoming tool executions
 let managedTaskStopped = false;
 
-// Pending LLM responses — for proxying LLM calls through the relay
-const pendingLLMRequests = new Map(); // requestId → { resolve, reject, timeout }
-
 // Managed session credentials (set when pairing flow completes)
 let managedSessionToken = null;
 let managedBrowserSessionId = null;
@@ -46,7 +43,6 @@ let managedBrowserSessionId = null;
 export async function setManagedSession(sessionToken, browserSessionId, apiUrl) {
   managedSessionToken = sessionToken;
   managedBrowserSessionId = browserSessionId;
-  managedTaskStopped = false; // Reset stop flag on new session
 
   // Derive relay URL from API URL
   // For HTTPS: use wss://relay.{domain} (port 443 via Caddy)
@@ -255,12 +251,6 @@ function _doConnect() {
         if (message.type === 'registered' || message.type === 'error') {
           if (message.type === 'error') {
             console.warn('[MCP Bridge] Relay error:', message.error);
-            // Invalid session token means the session was deleted or expired.
-            // Clear stale credentials so we stop retrying and fall back to local relay.
-            if (message.error && String(message.error).includes('Invalid session token') && managedSessionToken) {
-              console.warn('[MCP Bridge] Clearing invalid managed session — re-pair to reconnect');
-              clearManagedSession();
-            }
           }
           return;
         }
@@ -427,48 +417,9 @@ function ensureBridgeSession(sessionId, data = {}) {
 /**
  * Handle an MCP command from the inbox
  */
-/**
- * Proxy an LLM call through the relay to the managed backend.
- * Used by tools (e.g. find) that need LLM when running in managed mode.
- */
-function callLLMViaRelay(params) {
-  return new Promise((resolve, reject) => {
-    const requestId = crypto.randomUUID();
-    const timeout = setTimeout(() => {
-      pendingLLMRequests.delete(requestId);
-      reject(new Error('LLM request timed out (15s)'));
-    }, 15000);
-
-    pendingLLMRequests.set(requestId, { resolve, reject, timeout });
-
-    sendToMcpRelay({
-      type: 'llm_request',
-      requestId,
-      sessionId: managedBrowserSessionId,
-      messages: params.messages,
-      maxTokens: params.maxTokens || 800,
-    });
-  });
-}
-
 // eslint-disable-next-line complexity, sonarjs/cognitive-complexity
 async function handleMcpCommand(command) {
   console.log('[MCP Bridge] Received command:', command.type, command.sessionId);
-
-  // Handle LLM responses (from server-side LLM proxy)
-  if (command.type === 'llm_response' && command.requestId) {
-    const pending = pendingLLMRequests.get(command.requestId);
-    if (pending) {
-      clearTimeout(pending.timeout);
-      pendingLLMRequests.delete(command.requestId);
-      if (command.error) {
-        pending.reject(new Error(command.error));
-      } else {
-        pending.resolve({ content: command.content });
-      }
-    }
-    return;
-  }
 
   switch (command.type) {
     case 'start_task': {
@@ -653,10 +604,6 @@ async function handleMcpCommand(command) {
         type: 'TASK_COMPLETE',
         result: command.answer || 'Done',
       }).catch(() => {});
-      // Clean up tab mapping for this task
-      if (command.taskId) {
-        managedSessionTabs.delete(command.taskId);
-      }
       // Hide overlay on ALL tabs
       try {
         const allTabs = await chrome.tabs.query({});
@@ -683,18 +630,12 @@ async function handleMcpCommand(command) {
     case 'execute_tool': {
       // Managed backend requesting tool execution (server-driven agent loop)
       // Tool execution targets the session-owned tab, NOT the global active tab.
-      const { requestId, tool, input, browserSessionId: execSessionId, taskId: execTaskId } = command;
+      const { requestId, tool, input, browserSessionId: execSessionId } = command;
       debugLog('execute_tool received', { requestId, tool, browserSessionId: execSessionId });
 
       if (!requestId || !tool) {
         debugLog('execute_tool missing requestId or tool');
         break;
-      }
-
-      // Reset stop flag when a new task arrives (task_started may not have arrived yet)
-      if (execTaskId && execTaskId !== globalThis._lastManagedTaskId) {
-        managedTaskStopped = false;
-        globalThis._lastManagedTaskId = execTaskId;
       }
 
       // If user clicked Stop, reject ALL tool executions until a new task starts
@@ -719,26 +660,25 @@ async function handleMcpCommand(command) {
           break;
         }
 
-        // Resolve the tab for this task.
-        // Each task gets its own tab so parallel tasks don't fight over navigation.
-        // Falls back to session-level tab if no taskId.
-        const tabKey = execTaskId || execSessionId;
-        let tabId = managedSessionTabs.get(tabKey);
+        // Resolve the tab for this managed session.
+        // Each managed session owns a specific tab — NOT the global active tab.
+        // Tab mapping is persisted to chrome.storage.local to survive service worker sleep.
+        let tabId = managedSessionTabs.get(execSessionId);
 
-        if (!tabId && tabKey) {
+        if (!tabId && execSessionId) {
           // Try to restore from persistent storage
           try {
             const stored = await chrome.storage.local.get('managed_session_tabs');
             const persistedTabs = stored.managed_session_tabs || {};
-            if (persistedTabs[tabKey]) {
-              tabId = persistedTabs[tabKey];
-              managedSessionTabs.set(tabKey, tabId);
+            if (persistedTabs[execSessionId]) {
+              tabId = persistedTabs[execSessionId];
+              managedSessionTabs.set(execSessionId, tabId);
               // Verify tab still exists
               try {
                 await chrome.tabs.get(tabId);
               } catch {
                 tabId = null; // Tab was closed
-                managedSessionTabs.delete(tabKey);
+                managedSessionTabs.delete(execSessionId);
               }
             }
           } catch { /* tab may already be closed */ }
@@ -751,23 +691,25 @@ async function handleMcpCommand(command) {
           } catch {
             console.log('[MCP Bridge] Bound tab no longer exists, will create new one');
             tabId = null;
-            managedSessionTabs.delete(tabKey);
+            managedSessionTabs.delete(execSessionId);
           }
         }
 
         if (!tabId) {
           // No tab bound yet — create a dedicated tab for the agent to work in.
+          // The agent will navigate to the target page itself.
           try {
+            // Always create in the last focused window to avoid opening a new window
             const [focusedWin] = await chrome.windows.getAll({ windowTypes: ['normal'] }).then(wins => wins.filter(w => w.focused));
             const windowId = focusedWin?.id || (await chrome.windows.getLastFocused())?.id;
-            const newTab = await chrome.tabs.create({ url: 'about:blank', active: false, windowId });
+            const newTab = await chrome.tabs.create({ url: 'about:blank', active: true, windowId });
             tabId = newTab.id;
-            if (tabId && tabKey) {
-              managedSessionTabs.set(tabKey, tabId);
+            if (tabId && execSessionId) {
+              managedSessionTabs.set(execSessionId, tabId);
               const stored = (await chrome.storage.local.get('managed_session_tabs')).managed_session_tabs || {};
-              stored[tabKey] = tabId;
+              stored[execSessionId] = tabId;
               await chrome.storage.local.set({ managed_session_tabs: stored });
-              console.log('[MCP Bridge] Created dedicated tab for task:', tabKey, 'tab:', tabId);
+              console.log('[MCP Bridge] Created dedicated tab for session:', execSessionId, 'tab:', tabId);
             }
           } catch (tabErr) {
             sendToMcpRelay({
@@ -790,16 +732,15 @@ async function handleMcpCommand(command) {
         const deps = {
           sessionTabGroupId: null,
           log: (...args) => console.log('[execute_tool]', ...args),
-          callLLMSimple: managedBrowserSessionId ? callLLMViaRelay : null,
         };
 
         const result = await executeToolHandler(tool, toolInput, deps);
 
         // Update persisted tab mapping if navigate changed the tab
         if (tool === 'navigate' && result?.tabId && result.tabId !== tabId) {
-          managedSessionTabs.set(tabKey, result.tabId);
+          managedSessionTabs.set(execSessionId, result.tabId);
           const stored = (await chrome.storage.local.get('managed_session_tabs')).managed_session_tabs || {};
-          stored[tabKey] = result.tabId;
+          stored[execSessionId] = result.tabId;
           await chrome.storage.local.set({ managed_session_tabs: stored });
         }
 

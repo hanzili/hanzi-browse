@@ -48,16 +48,6 @@ export interface StepUpdate {
     toolInput?: Record<string, any>;
     text?: string;
 }
-export interface TurnLog {
-    step: number;
-    tools: Array<{
-        name: string;
-        input: Record<string, any>;
-        result: string;
-        durationMs: number;
-    }>;
-    ai_response: string | null;
-}
 export interface AgentLoopResult {
     status: "complete" | "error" | "max_steps";
     answer: string;
@@ -69,7 +59,5 @@ export interface AgentLoopResult {
     };
     /** The model used for the last LLM call (for billing attribution) */
     model?: string;
-    /** Structured turn-by-turn log of the agent's actions */
-    turns?: TurnLog[];
 }
 export declare function runAgentLoop(params: AgentLoopParams): Promise<AgentLoopResult>;

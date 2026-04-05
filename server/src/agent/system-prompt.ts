@@ -2,9 +2,7 @@
  * System prompt for server-side managed agent loop.
  */
 
-import { getDomainSkill } from "./domain-knowledge.js";
-
-export function buildSystemPrompt(taskUrl?: string): Array<{ type: "text"; text: string }> {
+export function buildSystemPrompt(): Array<{ type: "text"; text: string }> {
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-US", {
     month: "numeric",
@@ -13,7 +11,7 @@ export function buildSystemPrompt(taskUrl?: string): Array<{ type: "text"; text:
   });
   const timeStr = now.toLocaleTimeString("en-US");
 
-  const blocks: Array<{ type: "text"; text: string }> = [
+  return [
     {
       type: "text",
       text: `You are a web automation assistant with browser tools. Your priority is to complete the user's request efficiently and autonomously.
@@ -42,15 +40,4 @@ When a page shows only a loading spinner, use the computer tool with action "wai
 </tool_usage_requirements>`,
     },
   ];
-
-  // Inject domain-specific knowledge if the task targets a known site
-  const domainSkill = taskUrl ? getDomainSkill(taskUrl) : null;
-  if (domainSkill) {
-    blocks.push({
-      type: "text",
-      text: `<domain_knowledge domain="${domainSkill.domain}">\n${domainSkill.skill}\n</domain_knowledge>`,
-    });
-  }
-
-  return blocks;
 }

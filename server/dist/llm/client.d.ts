@@ -50,8 +50,6 @@ export interface LLMResponse {
     };
     /** The model that produced this response (for billing attribution) */
     model?: string;
-    /** Raw Gemini response parts — preserves thought signatures for Gemini 3+ */
-    _rawGeminiParts?: any[];
 }
 export interface CallLLMParams {
     messages: Message[];

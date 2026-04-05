@@ -1,7 +1,5 @@
 <div align="center">
 
-[English](README.md) | [中文](docs/zh/README.md)
-
 <img src="docs/logo.svg" width="80" alt="Hanzi Browse" />
 
 # Hanzi Browse
@@ -109,7 +107,6 @@ Installed automatically during `npx hanzi-browse setup`. Your agent reads these 
 | `social-poster` | Draft per-platform posts, publish from your signed-in accounts |
 | `linkedin-prospector` | Find prospects, send personalized connection requests |
 | `a11y-auditor` | Run accessibility audits in a real browser |
-| `data-extractor` | Extract structured data from websites into CSV/JSON |
 | `x-marketer` | Twitter/X marketing workflows |
 
 Open source — [add your own](https://github.com/hanzili/hanzi-browse/tree/main/server/skills).
@@ -166,7 +163,7 @@ console.log(result.answer);
 | `browser_message` | Send follow-up to an existing session. |
 | `browser_status` | Check progress. |
 | `browser_stop` | Stop a task. |
-| `browser_screenshot` | Capture current page as image. |
+| `browser_screenshot` | Capture current page as PNG. |
 
 <br/>
 
@@ -218,73 +215,12 @@ Optional services:
 
 ### Load the extension
 
-Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", and select the project root (the folder that contains `manifest.json`).
-
-### Verify everything works
-
-After `make dev` is running and the extension is loaded, test both user paths:
-
-**Test 1: MCP / CLI mode (user path)**
-
-```bash
-# In a separate terminal:
-node server/dist/cli.js start "Go to example.com and tell me the page title"
-```
-
-You should see a Chrome window open, the agent navigate to example.com, and return the page title. If this works, the relay + extension + agent loop are all connected.
-
-**Test 2: Managed API mode (developer path)**
-
-```bash
-# 1. Check the API is running
-curl http://localhost:3456/v1/health
-
-# 2. Open the dashboard and sign in (requires Google OAuth configured)
-open http://localhost:3456/dashboard
-
-# 3. Create an API key from the dashboard, then:
-curl -X POST http://localhost:3456/v1/browser-sessions/pair \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json"
-
-# 4. Open the pairing URL in Chrome (from the response)
-open "http://localhost:3456/pair/PAIRING_TOKEN"
-
-# 5. After pairing, run a task
-curl -X POST http://localhost:3456/v1/tasks \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"task": "Go to example.com and read the title", "browser_session_id": "SESSION_ID"}'
-
-# 6. Check the result
-curl http://localhost:3456/v1/tasks/TASK_ID \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-**Test 3: Embed widget**
-
-Create a test HTML file and open it in Chrome:
-
-```html
-<div id="hanzi"></div>
-<script src="http://localhost:3456/embed.js"></script>
-<script>
-  HanziConnect.mount('#hanzi', {
-    apiKey: 'YOUR_PUBLISHABLE_KEY',
-    apiUrl: 'http://localhost:3456',
-    onConnected: (id) => console.log('Connected:', id),
-    onError: (err) => console.log('Error:', err),
-  });
-</script>
-```
-
-You should see the pairing widget with step-by-step instructions.
+Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", select the `dist/` folder.
 
 ### Notes
 
 - **Local vs CLI usage** -- `npx hanzi-browse setup` is for packaged usage and may not work in a local clone
 - **Port conflicts** -- if you see `EADDRINUSE` on `3456`, stop existing processes or run `make stop`
-- **No Google OAuth?** -- The dashboard sign-in won't work, but you can seed a test workspace directly in the database and use the API key for testing
 
 ### Commands
 

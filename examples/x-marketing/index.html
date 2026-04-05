@@ -213,31 +213,6 @@ function load() {
   if (changed) save();
 }
 
-// ── Engagement log (cross-session dedup) ──
-function getEngagementLog() {
-  try { return JSON.parse(localStorage.getItem('xm_engagement_log')) || []; } catch { return []; }
-}
-
-function logEngagement(draft, keyword) {
-  const log = getEngagementLog();
-  log.push({
-    tweet_url: draft.tweet_url,
-    author_handle: (draft.author_handle || '').toLowerCase(),
-    keyword: keyword || '',
-    reply_type: draft.reply_type || '',
-    posted_at: new Date().toISOString(),
-  });
-  localStorage.setItem('xm_engagement_log', JSON.stringify(log));
-}
-
-function getEngagedAuthors() {
-  return new Set(getEngagementLog().map(e => e.author_handle));
-}
-
-function getEngagedUrls() {
-  return new Set(getEngagementLog().map(e => e.tweet_url));
-}
-
 async function checkBrowser() {
   try {
     const s = await api('GET', '/api/sessions');
@@ -358,12 +333,6 @@ async function startFlow() {
   const desc = $('f-desc').value.trim();
   if (!name) return toast('Enter a product name');
 
-  // If user provided a URL, ensure browser is connected so we can read it
-  if (url && !sid) {
-    const browserSid = await ensureBrowser();
-    if (!browserSid) return toast('Browser needed to read your website');
-  }
-
   screen = 'working';
   const steps = [
     { label: 'Analyzing your product', done: false, active: true },
@@ -427,18 +396,6 @@ async function startFlow() {
 // ── Strategy review ──
 function renderStrategy() {
   const p = product;
-  const log = getEngagementLog();
-  const now = Date.now();
-  const keywordStats = {};
-  for (const entry of log) {
-    if (!entry.keyword) continue;
-    const k = entry.keyword.toLowerCase();
-    if (!keywordStats[k]) keywordStats[k] = { total: 0, today: 0, week: 0 };
-    keywordStats[k].total++;
-    const age = now - new Date(entry.posted_at).getTime();
-    if (age < 86400000) keywordStats[k].today++;
-    if (age < 604800000) keywordStats[k].week++;
-  }
   $('app').innerHTML = `
     <h1>Your strategy</h1>
     <p class="subtitle">Review keywords, then we'll search X.</p>
@@ -447,11 +404,7 @@ function renderStrategy() {
       <div style="margin-bottom:12px">
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Keywords <span style="font-weight:400">(click to remove)</span></div>
         <div class="chips" role="list" aria-label="Search keywords">
-          ${(p.keywords || []).map((k, i) => {
-            const stats = keywordStats[k.toLowerCase()];
-            const hint = stats ? (stats.today > 0 ? stats.today + ' today' : stats.week > 0 ? stats.week + ' this week' : stats.total + ' all-time') : '';
-            return `<span class="chip" role="button" tabindex="0" aria-label="Remove ${esc(k)}" onclick="removeKeyword(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();removeKeyword(${i})}">${esc(k)}${hint ? ` <span style="color:var(--muted);font-size:11px;font-weight:400">(${hint})</span>` : ''} <span aria-hidden="true" style="margin-left:4px;opacity:0.5">&times;</span></span>`;
-          }).join('')}
+          ${(p.keywords || []).map((k, i) => `<span class="chip" role="button" tabindex="0" aria-label="Remove ${esc(k)}" onclick="removeKeyword(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();removeKeyword(${i})}">${esc(k)} <span aria-hidden="true" style="margin-left:4px;opacity:0.5">&times;</span></span>`).join('')}
         </div>
         <div style="margin-top:8px;display:flex;gap:6px">
           <input id="new-keyword" placeholder="Add keyword..." aria-label="New keyword" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;background:var(--surface);color:var(--ink);outline:none;min-height:44px" onkeydown="if(event.key==='Enter'){addKeyword()}" />
@@ -614,34 +567,10 @@ async function startSearch() {
 
     clearInterval(timerInterval);
 
-    const engagedUrls = getEngagedUrls();
-    const engagedAuthors = getEngagedAuthors();
     allDrafts = (draftResult.drafts || []).filter(d => {
       const reply = (d.reply_text || '').toLowerCase();
-      if (reply.startsWith('skip') || reply.includes('bot account') || reply.includes('not recommended')) return false;
-      if (engagedUrls.has(d.tweet_url)) return false;
-      if (engagedAuthors.has((d.author_handle || '').toLowerCase())) return false;
-      return true;
+      return !reply.startsWith('skip') && !reply.includes('bot account') && !reply.includes('not recommended');
     });
-
-    if (allDrafts.length === 0 && (draftResult.drafts || []).length > 0) {
-      clearInterval(timerInterval);
-      const log = getEngagementLog();
-      $('app').innerHTML = `
-        <div class="draft-card">
-          <h3 style="margin-bottom:8px">All caught up</h3>
-          <p style="font-size:14px;color:var(--muted);margin-bottom:12px">
-            All ${draftResult.drafts.length} conversations found were already engaged (${log.length} replies all-time).
-            Try adding new keywords or come back later for fresh tweets.
-          </p>
-        </div>
-        <button class="btn btn-primary" onclick="screen='strategy';render()" style="margin-top:12px">Edit keywords</button>
-      `;
-      return;
-    }
-
-    const searchKeywords = keywords.join(', ');
-    for (const d of allDrafts) d._searchKeywords = searchKeywords;
 
     save();
     toast(allDrafts.length + ' drafts ready!');
@@ -763,7 +692,6 @@ function renderFeed() {
         ${actionable > 0 && posted.length > 0 ? ', ' : ''}
         ${posted.length > 0 ? posted.length + ' posted' : ''}
         ${actionable === 0 && posted.length === 0 && failed.length > 0 ? failed.length + ' failed' : ''}
-        ${(() => { const total = getEngagementLog().length; return total > 0 ? ` &middot; ${total} all-time` : ''; })()}
       </div>
       <div style="display:flex;gap:6px">
         ${pending.length > 0 ? `<button class="btn btn-approve btn-sm" onclick="approveAll()">Approve all</button>` : ''}
@@ -950,26 +878,23 @@ async function postAll() {
   save(); render();
 
   let ok = 0, fail = 0;
-  // Fire all posts in parallel — each gets its own browser tab
-  const results = await Promise.allSettled(approved.map(d =>
-    api('POST', '/api/post', {
+  for (let i = 0; i < approved.length; i++) {
+    const result = await api('POST', '/api/post', {
       browser_session_id: browserSid,
-      tweet_url: d.tweet_url,
-      reply_text: d.reply_text,
-    })
-  ));
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled' && r.value?.result === 'complete') {
+      tweet_url: approved[i].tweet_url,
+      reply_text: approved[i].reply_text,
+    });
+    if (result && result.result === 'complete') {
       approved[i].status = 'posted';
       approved[i].posted_at = new Date().toISOString();
-      logEngagement(approved[i], approved[i]._searchKeywords);
       ok++;
     } else {
       approved[i].status = 'failed';
       fail++;
     }
-  });
-  save(); render();
+    save(); render();
+    if (i < approved.length - 1) await new Promise(r => setTimeout(r, 15000));
+  }
 
   postingInProgress = false;
   save();
@@ -992,7 +917,7 @@ async function retryPost(id) {
     reply_text: d.reply_text,
   });
   if (result && result.result === 'complete') {
-    d.status = 'posted'; d.posted_at = new Date().toISOString(); logEngagement(d, d._searchKeywords); toast('Posted!');
+    d.status = 'posted'; d.posted_at = new Date().toISOString(); toast('Posted!');
   } else {
     d.status = 'failed'; toast('Failed');
   }

@@ -107,15 +107,9 @@ function convertMessages(messages) {
                 else if (block.type === "tool_use") {
                     const tu = block;
                     toolUseIdToName[tu.id] = tu.name;
-                    // If raw Gemini parts are available (with thought signatures), use them
-                    if (msg._rawGeminiParts) {
-                        // Raw parts already added below — skip individual conversion
-                    }
-                    else {
-                        parts.push({
-                            functionCall: { name: tu.name, args: tu.input },
-                        });
-                    }
+                    parts.push({
+                        functionCall: { name: tu.name, args: tu.input },
+                    });
                 }
                 else if (block.type === "tool_result") {
                     const tr = block;
@@ -147,12 +141,7 @@ function convertMessages(messages) {
                 }
             }
         }
-        // Gemini 3+: if raw parts with thought signatures are available, use them directly
-        // for the model turn (preserves thought_signature fields that Gemini 3 requires)
-        if (role === "model" && msg._rawGeminiParts) {
-            geminiMessages.push({ role, parts: msg._rawGeminiParts });
-        }
-        else if (parts.length > 0) {
+        if (parts.length > 0) {
             geminiMessages.push({ role, parts });
         }
     }
@@ -219,7 +208,6 @@ async function parseGeminiStream(response, onText, signal) {
     const toolCalls = [];
     let stopReason = "end_turn";
     let usage = { input_tokens: 0, output_tokens: 0 };
-    let rawModelParts = null; // Gemini 3: preserve thought signatures
     try {
         while (true) {
             if (signal?.aborted) {
@@ -247,10 +235,6 @@ async function parseGeminiStream(response, onText, signal) {
                 if (!candidate)
                     continue;
                 const parts = candidate.content?.parts || [];
-                // Capture raw parts for thought signature passthrough (Gemini 3+)
-                if (!rawModelParts)
-                    rawModelParts = [];
-                rawModelParts.push(...parts);
                 for (const part of parts) {
                     if (part.text) {
                         currentText += part.text;
@@ -292,7 +276,7 @@ async function parseGeminiStream(response, onText, signal) {
     if (toolCalls.length > 0) {
         stopReason = "tool_use";
     }
-    return { content, stop_reason: stopReason, usage, _rawGeminiParts: rawModelParts || undefined };
+    return { content, stop_reason: stopReason, usage };
 }
 // --- Main Call ---
 /**
@@ -305,7 +289,7 @@ export async function callVertexLLM(params) {
     if (!vertexConfig) {
         throw new Error("Vertex AI not initialized. Call initVertex() first.");
     }
-    const { messages, system, tools, model = "gemini-3-flash-preview", maxTokens = 16384, signal, onText, } = params;
+    const { messages, system, tools, model = "gemini-2.5-flash", maxTokens = 16384, signal, onText, } = params;
     const { projectId } = vertexConfig;
     // Use global endpoint — Google routes to whichever region has capacity,
     // reducing 429s compared to pinning to a single region.

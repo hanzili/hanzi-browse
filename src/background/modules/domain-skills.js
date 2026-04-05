@@ -82,3 +82,4 @@ export function isAntiBotEnabled(url, userSkills = []) {
   const skills = getDomainSkills(url, userSkills);
   return skills.some(skill => skill.antiBot === true);
 }
+
