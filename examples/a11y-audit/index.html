@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Accessibility Audit in a Real Browser</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8MZTXW947"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-C8MZTXW947');</script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23111f1a'/><path d='M7 7v10M17 7v10M7 12h10' stroke='%23eef5ef' stroke-width='2.5' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f2ea;
+      --surface: rgba(255, 251, 244, 0.92);
+      --surface-strong: #fffdf8;
+      --ink: #16211d;
+      --muted: #5e6a64;
+      --line: #d9ddd3;
+      --accent: #0f7a5d;
+      --accent-2: #d86a2c;
+      --accent-dark: #0a5a45;
+      --critical: #9f2f26;
+      --critical-bg: #fff0ed;
+      --serious: #a75b07;
+      --serious-bg: #fff5df;
+      --moderate: #1568a8;
+      --moderate-bg: #edf6ff;
+      --minor: #5f6572;
+      --minor-bg: #f3f5f9;
+      --pass: #276044;
+      --pass-bg: #edf7f1;
+      --shadow: 0 20px 60px rgba(22, 33, 29, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(216,106,44,0.15), transparent 28%),
+        radial-gradient(circle at top right, rgba(15,122,93,0.18), transparent 34%),
+        linear-gradient(180deg, #f8f3e9 0%, #f3efe7 100%);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 24px 20px 80px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .brand svg { width: 32px; height: 32px; flex-shrink: 0; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr); gap: 24px; align-items: start; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid rgba(217,221,211,0.9);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+    .hero { padding: 34px; overflow: hidden; position: relative; }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -70px -120px auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(216,106,44,0.18), transparent 65%);
+      pointer-events: none;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #eef7f3;
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2.7rem, 5vw, 4.6rem); line-height: 0.92; margin-top: 18px; max-width: 12ch; }
+    .hero-sub { max-width: 620px; margin-top: 18px; color: var(--muted); font-size: 18px; line-height: 1.65; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+    .btn {
+      min-height: 48px;
+      border: none;
+      border-radius: 14px;
+      padding: 0 20px;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:focus-visible { outline: 3px solid rgba(21,104,168,0.38); outline-offset: 2px; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; font-weight: 700; }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-sm { min-height: 40px; border-radius: 12px; padding: 0 14px; font-size: 14px; }
+    .meta-note { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .sample { padding: 22px; }
+    .sample-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .sample-card {
+      background: var(--surface-strong);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .sample-shot {
+      min-height: 210px;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0)),
+        linear-gradient(145deg, #f7d8c5, #fff7ef 48%, #dcece4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sample-ui {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(22,33,29,0.08);
+      box-shadow: 0 16px 34px rgba(22, 33, 29, 0.12);
+      padding: 18px;
+    }
+    .sample-ui .bar { height: 10px; border-radius: 999px; background: #dae7df; margin-bottom: 12px; }
+    .sample-ui .muted-line { height: 8px; border-radius: 999px; background: #e6e2da; margin-bottom: 10px; }
+    .sample-ui .cta {
+      margin-top: 16px;
+      border-radius: 12px;
+      padding: 14px;
+      background: #f2f4f7;
+      color: #a9b3bb;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(22,33,29,0.05);
+    }
+    .sample-ui .focus-ring {
+      margin-top: 12px;
+      border-radius: 14px;
+      padding: 12px;
+      border: 2px dashed rgba(15,122,93,0.35);
+      background: rgba(15,122,93,0.08);
+      color: var(--accent-dark);
+      font-size: 13px;
+    }
+    .finding-preview { padding: 18px; }
+    .severity-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .sev-critical { background: var(--critical-bg); color: var(--critical); }
+    .sev-serious { background: var(--serious-bg); color: var(--serious); }
+    .sev-moderate { background: var(--moderate-bg); color: var(--moderate); }
+    .sev-minor { background: var(--minor-bg); color: var(--minor); }
+    .setup, .working, .report { padding: 28px; }
+    .section-title { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+    .section-sub { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 22px; }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+    .field input {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0 16px;
+      background: var(--surface-strong);
+      color: var(--ink);
+    }
+    .scope-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+    .scope-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface-strong);
+      padding: 16px;
+      cursor: pointer;
+      min-height: 148px;
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .scope-card:hover { transform: translateY(-1px); }
+    .scope-card.selected {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(15,122,93,0.22);
+      background: #f3fbf8;
+    }
+    .scope-card h3 { font-size: 20px; margin-bottom: 6px; }
+    .scope-card p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .list { display: grid; gap: 10px; }
+    .step-row, .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface-strong);
+    }
+    .step-dot, .check-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .is-active .step-dot, .is-active .check-dot {
+      border-color: var(--accent);
+      color: var(--accent);
+      animation: pulse 1.3s infinite;
+    }
+    .is-done .step-dot, .is-done .check-dot {
+      border-color: var(--pass);
+      background: var(--pass);
+      color: #fff;
+      animation: none;
+    }
+    .is-error .check-dot {
+      border-color: var(--critical);
+      color: var(--critical);
+      animation: none;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .muted { color: var(--muted); }
+    .status-line { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; font-size: 14px; color: var(--muted); }
+    .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 20px 0 24px; }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--surface-strong);
+    }
+    .metric-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .metric-value { font-size: 32px; font-weight: 700; margin-top: 8px; }
+    .metric-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .report-stack { display: grid; gap: 22px; }
+    .severity-section {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface-strong);
+      padding: 18px;
+    }
+    .severity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .finding {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .finding:first-of-type { border-top: none; padding-top: 0; }
+    .finding-shot {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      min-height: 170px;
+      background: #e8ece6;
+    }
+    .finding-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .finding-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #eef2ef;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .finding p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-top: 8px; }
+    .finding strong { color: var(--ink); }
+    .pass-list, .priority-list { display: grid; gap: 10px; }
+    .pass-item, .priority-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface-strong);
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .priority-item { background: #fff9f3; }
+    .pass-item { background: var(--pass-bg); color: var(--pass); }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .toast.show { opacity: 1; }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .finding { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .hero, .sample, .setup, .working, .report { padding: 22px; }
+      .scope-grid, .summary-grid { grid-template-columns: 1fr; }
+      h1 { max-width: none; }
+      .hero-actions { flex-direction: column; }
+      .hero-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<script src="embed.js"></script>
+<script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init('phc_SNXFKD8YOBPvBNWWZnuCe7stDsJJNJ5WS8MujKhajIF',{api_host:'https://us.i.posthog.com',person_profiles:'anonymous'})</script>
+  <div class="shell">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#111f1a"/><path d="M7 7v10M17 7v10M7 12h10" stroke="#eef5ef" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span>Accessibility Audit</span>
+    </div>
+
+    <main id="app"></main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    let sid = null;
+    let screen = 'landing';
+    let auditConfig = { url: '', scope: 'quick' };
+    let auditPlan = null;
+    let progress = null;
+    let report = null;
+
+    const BASE = location.pathname.replace(/\/$/, '');
+    const $ = (id) => document.getElementById(id);
+
+    function esc(value) {
+      if (value == null) return '';
+      const div = document.createElement('div');
+      div.textContent = String(value);
+      return div.innerHTML;
+    }
+
+    function toast(message) {
+      const el = $('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    async function api(method, path, body) {
+      const url = path.startsWith('/') ? BASE + path : path;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    function severityClass(level) {
+      return {
+        Critical: 'sev-critical',
+        Serious: 'sev-serious',
+        Moderate: 'sev-moderate',
+        Minor: 'sev-minor'
+      }[level] || 'sev-moderate';
+    }
+
+    function saveState() {
+      localStorage.setItem('a11y_audit_config', JSON.stringify(auditConfig));
+      localStorage.setItem('a11y_audit_report', JSON.stringify(report));
+    }
+
+    function loadState() {
+      try { auditConfig = { ...auditConfig, ...(JSON.parse(localStorage.getItem('a11y_audit_config')) || {}) }; } catch {}
+      try { report = JSON.parse(localStorage.getItem('a11y_audit_report')) || null; } catch {}
+      if (report) screen = 'report';
+    }
+
+    async function checkBrowser() {
+      try {
+        const res = await api('GET', '/api/sessions');
+        const connected = (res.sessions || []).find((s) => s.status === 'connected');
+        if (connected) sid = connected.id;
+        return !!connected;
+      } catch {
+        return false;
+      }
+    }
+
+    async function ensureBrowser() {
+      if (sid) return sid;
+      if (await checkBrowser()) return sid;
+
+      return new Promise((resolve) => {
+        if (typeof HanziConnect !== 'undefined') {
+          $('app').innerHTML = `
+            <section class="panel setup">
+              <h2 class="section-title">Connect browser</h2>
+              <p class="section-sub">The audit runs in a real paired browser so it can verify focus order, dialogs, and rendered contrast.</p>
+              <div id="hanzi-pair-widget" style="max-width:440px"></div>
+              <button class="btn btn-ghost btn-full" id="refresh-connection" style="margin-top:12px">I've completed pairing</button>
+            </section>
+          `;
+          HanziConnect.mount('#hanzi-pair-widget', {
+            apiKey: 'hic_pub_proxy',
+            apiUrl: BASE,
+            purpose: 'audit accessibility in a real browser',
+            onConnected: (sessionId) => {
+              sid = sessionId;
+              toast('Browser connected');
+              resolve(sid);
+            },
+            onDisconnected: () => {
+              sid = null;
+              toast('Browser disconnected');
+            }
+          });
+          $('refresh-connection').onclick = async () => {
+            $('refresh-connection').disabled = true;
+            $('refresh-connection').textContent = 'Checking...';
+            if (await checkBrowser()) {
+              toast('Browser connected');
+              resolve(sid);
+              return;
+            }
+            $('refresh-connection').disabled = false;
+            $('refresh-connection').textContent = "I've completed pairing";
+          };
+        } else {
+          $('app').innerHTML = `
+            <section class="panel setup">
+              <h2 class="section-title">Connect browser</h2>
+              <p class="section-sub">Install the Hanzi Browse extension, then pair it to run the accessibility audit.</p>
+              <button class="btn btn-primary" id="pair-fallback">Pair browser</button>
+              <p class="meta-note" id="pair-status" style="margin-top:12px"></p>
+            </section>
+          `;
+          $('pair-fallback').onclick = async () => {
+            const data = await api('POST', '/api/pair');
+            window.open(data.pairing_url, '_blank');
+            $('pair-status').textContent = 'Complete pairing in the new tab, then come back here.';
+            for (let i = 0; i < 60; i++) {
+              await new Promise((r) => setTimeout(r, 2000));
+              if (await checkBrowser()) {
+                toast('Browser connected');
+                resolve(sid);
+                return;
+              }
+            }
+            $('pair-status').textContent = 'Timed out waiting for connection.';
+            resolve(null);
+          };
+        }
+      });
+    }
+
+    function render() {
+      if (screen === 'landing') return renderLanding();
+      if (screen === 'setup') return renderSetup();
+      if (screen === 'working') return renderWorking();
+      if (screen === 'report') return renderReport();
+    }
+
+    function goTo(nextScreen) {
+      screen = nextScreen;
+      render();
+    }
+
+    function renderLanding() {
+      $('app').innerHTML = `
+        <div class="layout">
+          <section class="panel hero">
+            <div class="eyebrow">Real Browser WCAG Audit</div>
+            <h1>Free accessibility audit in a real browser</h1>
+            <p class="hero-sub">Tab through the actual page, verify focus order, inspect rendered contrast, test modals and async UI, then group findings by WCAG severity with screenshots and fix guidance.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" onclick="goTo('setup')">Start free audit</button>
+              <button class="btn btn-ghost" onclick="scrollToSample()">See sample report</button>
+            </div>
+            <p class="meta-note" style="margin-top:16px">Built for developers, designers, PMs, and compliance teams. Quick check audits one page. Deep scan samples up to three pages and more interactive state.</p>
+          </section>
+
+          <aside class="panel sample" id="sample-report">
+            <div class="sample-header">
+              <div>
+                <div class="meta-note" style="text-transform:uppercase;letter-spacing:0.08em">Sample Finding</div>
+                <h3 style="font-size:26px;margin-top:4px">Invisible keyboard focus on primary CTA</h3>
+              </div>
+              <span class="severity-pill sev-serious">Serious</span>
+            </div>
+            <div class="sample-card">
+              <div class="sample-shot">
+                <div class="sample-ui" aria-hidden="true">
+                  <div class="bar" style="width:38%"></div>
+                  <div class="muted-line" style="width:100%"></div>
+                  <div class="muted-line" style="width:84%"></div>
+                  <div class="cta">Book demo</div>
+                  <div class="focus-ring">Tab lands here, but the rendered button state barely changes.</div>
+                </div>
+              </div>
+              <div class="finding-preview">
+                <div class="meta-note">WCAG 2.4.7 Focus Visible</div>
+                <p style="font-size:14px;line-height:1.6;margin-top:8px;color:var(--muted)">Keyboard users can reach the CTA, but the focus style is too subtle against the button background. In a real tab sequence this looks effectively invisible.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      `;
+    }
+
+    function scrollToSample() {
+      const el = $('sample-report');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function renderSetup() {
+      $('app').innerHTML = `
+        <section class="panel setup">
+          <h2 class="section-title">Audit setup</h2>
+          <p class="section-sub">Enter the page to audit, then choose how much of the site the strategy layer should sample before the browser starts testing interaction states.</p>
+
+          <div class="field">
+            <label for="audit-url">URL</label>
+            <input id="audit-url" type="url" inputmode="url" placeholder="https://example.com" value="${esc(auditConfig.url)}">
+          </div>
+
+          <div class="field">
+            <label>Scope</label>
+            <div class="scope-grid">
+              <button class="scope-card ${auditConfig.scope === 'quick' ? 'selected' : ''}" onclick="setScope('quick')" aria-pressed="${auditConfig.scope === 'quick'}">
+                <h3>Quick check</h3>
+                <p>Audit one page. Best for a landing page, pricing page, or a bug report you want to verify fast.</p>
+              </button>
+              <button class="scope-card ${auditConfig.scope === 'deep' ? 'selected' : ''}" onclick="setScope('deep')" aria-pressed="${auditConfig.scope === 'deep'}">
+                <h3>Deep scan</h3>
+                <p>Strategy selects up to three pages and tests more interactive state like forms, dialogs, and async UI.</p>
+              </button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="startAudit()">Run audit</button>
+          <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="goTo('landing')">Back</button>
+        </section>
+      `;
+    }
+
+    function setScope(scope) {
+      auditConfig.scope = scope;
+      saveState();
+      renderSetup();
+    }
+
+    function renderWorking() {
+      if (!progress) return;
+      $('app').innerHTML = `
+        <section class="panel working">
+          <div class="status-line">
+            <span>${esc(progress.title)}</span>
+            <span>${esc(progress.detail || '')}</span>
+          </div>
+          <h2 class="section-title">${esc(progress.headline)}</h2>
+          <p class="section-sub">${esc(progress.subhead)}</p>
+
+          <div class="list" style="margin-bottom:18px">
+            ${(progress.steps || []).map((step, index) => `
+              <div class="step-row ${step.done ? 'is-done' : step.active ? 'is-active' : ''}">
+                <div class="step-dot">${step.done ? '&#10003;' : index + 1}</div>
+                <div>
+                  <div style="font-weight:600">${esc(step.label)}</div>
+                  ${step.note ? `<div class="meta-note" style="margin-top:4px">${esc(step.note)}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${progress.checks?.length ? `
+            <div style="margin-top:22px">
+              <div class="meta-note" style="text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Per-check progress</div>
+              <div class="list">
+                ${progress.checks.map((check) => `
+                  <div class="check-row ${check.status === 'done' ? 'is-done' : check.status === 'active' ? 'is-active' : check.status === 'error' ? 'is-error' : ''}">
+                    <div class="check-dot">${check.status === 'done' ? '&#10003;' : check.status === 'error' ? '!' : '&bull;'}</div>
+                    <div style="flex:1">
+                      <div style="font-weight:600">${esc(check.label)}</div>
+                      <div class="meta-note" style="margin-top:4px">${esc(check.note || (check.status === 'active' ? 'Running in browser...' : check.status === 'done' ? 'Completed' : 'Waiting'))}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </section>
+      `;
+    }
+
+    function updateProgress(patch) {
+      progress = { ...progress, ...patch };
+      renderWorking();
+    }
+
+    async function startAudit() {
+      auditConfig.url = $('audit-url').value.trim();
+      if (!auditConfig.url) return toast('Enter a URL');
+      saveState();
+
+      progress = {
+        title: 'Audit running',
+        detail: 'Preparing',
+        headline: 'Preparing accessibility audit',
+        subhead: 'Planning pages and WCAG phases before the browser starts testing.',
+        steps: [
+          { label: 'Generate audit plan', active: true, done: false },
+          { label: 'Connect browser', active: false, done: false },
+          { label: 'Run browser checks', active: false, done: false },
+          { label: 'Compile report', active: false, done: false }
+        ],
+        checks: []
+      };
+      screen = 'working';
+      renderWorking();
+
+      try {
+        if (typeof posthog !== 'undefined') posthog.capture('a11y_audit_started', { scope: auditConfig.scope });
+
+        const planRes = await api('POST', '/api/plan', auditConfig);
+        auditPlan = planRes.audit;
+        progress.steps[0].done = true;
+        progress.steps[0].active = false;
+        progress.steps[1].active = true;
+        updateProgress({
+          detail: auditPlan.scope === 'deep' ? `${auditPlan.pages.length} pages selected` : '1 page selected',
+          headline: 'Connect your browser',
+          subhead: 'The browser will test rendered states, keyboard interaction, and dynamic UI.',
+        });
+
+        const browserSid = await ensureBrowser();
+        if (!browserSid) throw new Error('Browser not connected');
+
+        progress.steps[1].done = true;
+        progress.steps[1].active = false;
+        progress.steps[2].active = true;
+
+        const checks = [];
+        for (const page of auditPlan.pages) {
+          for (const phase of auditPlan.phases) {
+            checks.push({
+              key: page.url + '::' + phase.id,
+              page,
+              phase,
+              label: `${phase.label} · ${page.label || page.url}`,
+              status: 'waiting',
+              note: page.reason || ''
+            });
+          }
+        }
+        updateProgress({
+          headline: 'Running browser checks',
+          subhead: 'Watching focus, contrast, ARIA, and interactive state in the paired browser.',
+          detail: `${checks.length} checks queued`,
+          checks
+        });
+
+        const phaseResults = [];
+        for (const check of checks) {
+          check.status = 'active';
+          check.note = 'Testing in browser';
+          renderWorking();
+
+          const result = await api('POST', '/api/audit-phase', {
+            browser_session_id: browserSid,
+            page: check.page,
+            phase: check.phase
+          });
+          phaseResults.push(result);
+          check.status = 'done';
+          const findingCount = (result.findings || []).length;
+          check.note = findingCount ? `${findingCount} issue${findingCount === 1 ? '' : 's'} found` : 'No verified issues found';
+          renderWorking();
+        }
+
+        progress.steps[2].done = true;
+        progress.steps[2].active = false;
+        progress.steps[3].active = true;
+        updateProgress({
+          headline: 'Compiling report',
+          subhead: 'Grouping issues by severity and generating priorities for the team.',
+          detail: `${phaseResults.length} checks completed`
+        });
+
+        report = await api('POST', '/api/report', { audit: auditPlan, phase_results: phaseResults });
+        progress.steps[3].done = true;
+        progress.steps[3].active = false;
+        saveState();
+        screen = 'report';
+        renderReport();
+      } catch (err) {
+        toast(err.message || 'Audit failed');
+        $('app').innerHTML = `
+          <section class="panel setup">
+            <h2 class="section-title">Audit failed</h2>
+            <p class="section-sub">${esc(err.message || 'Unknown error')}</p>
+            <button class="btn btn-primary btn-full" onclick="goTo('setup')">Try again</button>
+          </section>
+        `;
+      }
+    }
+
+    function renderFindings(items) {
+      if (!items.length) {
+        return `<div class="meta-note">No verified issues in this severity group for the sampled pages.</div>`;
+      }
+      return items.map((item) => `
+        <article class="finding">
+          <div>
+            <div class="finding-meta">
+              <span class="severity-pill ${severityClass(item.severity)}">${esc(item.severity)}</span>
+              ${item.wcag ? `<span class="meta-chip">${esc(item.wcag)}</span>` : ''}
+              ${item.page_label ? `<span class="meta-chip">${esc(item.page_label)}</span>` : ''}
+              ${item.phase_label ? `<span class="meta-chip">${esc(item.phase_label)}</span>` : ''}
+            </div>
+            <h3 style="font-size:26px;line-height:1.05">${esc(item.title || 'Accessibility issue')}</h3>
+            ${item.element ? `<p><strong>Element:</strong> ${esc(item.element)}</p>` : ''}
+            ${item.impact ? `<p><strong>Impact:</strong> ${esc(item.impact)}</p>` : ''}
+            ${item.evidence ? `<p><strong>Evidence:</strong> ${esc(item.evidence)}</p>` : ''}
+            ${item.fix ? `<p><strong>Fix:</strong> ${esc(item.fix)}</p>` : ''}
+            ${item.selector ? `<p><strong>Selector:</strong> ${esc(item.selector)}</p>` : ''}
+          </div>
+          <div>
+            <div class="finding-shot">
+              ${item.screenshot ? `<img src="${item.screenshot}" alt="Screenshot evidence for ${esc(item.title || 'accessibility issue')}">` : `<div style="padding:20px;color:var(--muted);font-size:14px">No screenshot captured for this finding.</div>`}
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderReport() {
+      if (!report) return renderSetup();
+      const totals = report.summary?.severity_totals || {};
+      $('app').innerHTML = `
+        <section class="panel report">
+          <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
+            <div>
+              <div class="eyebrow">WCAG 2.1 AA Report</div>
+              <h2 class="section-title" style="margin-top:14px">${esc(report.summary?.headline || 'Accessibility audit report')}</h2>
+              <p class="section-sub" style="max-width:720px">${esc(report.summary?.summary || '')}</p>
+            </div>
+            <div class="metric" style="min-width:180px">
+              <div class="metric-label">Audit Score</div>
+              <div class="metric-value">${esc(report.summary?.score ?? 0)}</div>
+              <div class="metric-sub">${esc(report.audit?.scope === 'deep' ? 'Deep scan sample' : 'Quick page check')}</div>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="metric"><div class="metric-label">Critical</div><div class="metric-value" style="color:var(--critical)">${totals.Critical || 0}</div><div class="metric-sub">Blocks core access</div></div>
+            <div class="metric"><div class="metric-label">Serious</div><div class="metric-value" style="color:var(--serious)">${totals.Serious || 0}</div><div class="metric-sub">Major user friction</div></div>
+            <div class="metric"><div class="metric-label">Moderate</div><div class="metric-value" style="color:var(--moderate)">${totals.Moderate || 0}</div><div class="metric-sub">Noticeable defects</div></div>
+            <div class="metric"><div class="metric-label">Minor</div><div class="metric-value" style="color:var(--minor)">${totals.Minor || 0}</div><div class="metric-sub">Cleanup work</div></div>
+            <div class="metric"><div class="metric-label">Pages</div><div class="metric-value">${report.audit?.pages?.length || 0}</div><div class="metric-sub">Sampled in browser</div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,0.8fr);gap:18px;margin-bottom:22px">
+            <div>
+              <div class="meta-note" style="text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Top priorities</div>
+              <div class="priority-list">
+                ${(report.summary?.top_priorities || []).map((item) => `<div class="priority-item">${esc(item)}</div>`).join('') || '<div class="priority-item">No priority items generated.</div>'}
+              </div>
+            </div>
+            <div>
+              <div class="meta-note" style="text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Passing checks</div>
+              <div class="pass-list">
+                ${(report.passes || []).slice(0, 6).map((item) => `<div class="pass-item">${esc(item)}</div>`).join('') || '<div class="pass-item">No passing checks recorded.</div>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="report-stack">
+            ${['Critical', 'Serious', 'Moderate', 'Minor'].map((level) => `
+              <section class="severity-section">
+                <div class="severity-header">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="severity-pill ${severityClass(level)}">${level}</span>
+                    <h3 style="font-size:28px">${level} findings</h3>
+                  </div>
+                  <div class="meta-note">${(report.grouped_findings?.[level] || []).length} issue${(report.grouped_findings?.[level] || []).length === 1 ? '' : 's'}</div>
+                </div>
+                ${renderFindings(report.grouped_findings?.[level] || [])}
+              </section>
+            `).join('')}
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px">
+            <button class="btn btn-primary" onclick="goTo('setup')">Run another audit</button>
+            <button class="btn btn-ghost" onclick="downloadReport()">Download JSON</button>
+          </div>
+        </section>
+      `;
+    }
+
+    function downloadReport() {
+      if (!report) return;
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'a11y-audit-report.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function init() {
+      loadState();
+      await checkBrowser();
+      render();
+    }
+
+    init();
+    window.render = render;
+    window.goTo = goTo;
+    window.setScope = setScope;
+    window.startAudit = startAudit;
+    window.scrollToSample = scrollToSample;
+    window.downloadReport = downloadReport;
+  </script>
+</body>
+</html>
