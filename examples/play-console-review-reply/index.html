@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play Console Review Reply — Free Tool by Hanzi Browse</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%231a1a1a'/><path d='M5 12l4 4L19 7' stroke='%23fafaf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ea; --surface: #fffdf8; --ink: #1f1711; --muted: #6d6256;
+      --line: #e5ddd0; --accent: #2a7d4f; --accent-hover: #1f6040;
+      --green: #2f4a3d; --green-bg: #eef5f0;
+      --blue: #1d6fa5; --blue-bg: #eef3f8;
+      --red: #9a2e2e; --red-bg: #fef0ef;
+      --yellow: #7a5c00; --yellow-bg: #fdf8e8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .shell { max-width: 720px; margin: 0 auto; padding: 24px 32px 100px; }
+
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .brand span { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    h1 { font-family: 'Instrument Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.15; margin-bottom: 10px; }
+    .subtitle { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 28px; }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+    .field .hint { color: var(--muted); font-weight: 400; font-size: 12px; margin-top: 4px; }
+    .field input, .field textarea, .field select {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 14px; font-size: 15px; color: var(--ink);
+      background: var(--surface); outline: none; font-family: inherit;
+      resize: none; transition: border-color 0.15s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+    .field input::placeholder, .field textarea::placeholder { color: #bbb; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn { border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 8px; width: auto; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-approve { background: var(--green); color: #fff; }
+    .btn-approve:hover { opacity: 0.88; }
+    .btn-post { background: var(--accent); color: #fff; }
+    .btn-post:hover { background: var(--accent-hover); }
+    .btn-ghost { background: none; color: var(--muted); border: 1px solid var(--line); }
+    .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+    .btn-danger { background: none; color: var(--red); border: 1px solid var(--line); }
+
+    /* Stepper */
+    .stepper { margin: 32px 0 8px; display: flex; gap: 0; }
+    .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+    .step-item:not(:last-child)::after {
+      content: ''; position: absolute; top: 12px; left: 50%; width: 100%;
+      height: 2px; background: var(--line); z-index: 0;
+    }
+    .step-item.done:not(:last-child)::after { background: var(--accent); }
+    .step-num {
+      width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      background: var(--bg); z-index: 1; transition: all 0.3s;
+    }
+    .step-item.active .step-num { border-color: var(--accent); color: var(--accent); }
+    .step-item.done .step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .step-label { font-size: 11px; color: var(--muted); text-align: center; }
+    .step-item.active .step-label { color: var(--ink); font-weight: 600; }
+    .step-item.done .step-label { color: var(--accent); }
+
+    /* Status banner */
+    .status-banner { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .status-banner.working { border-color: var(--yellow); background: var(--yellow-bg); }
+    .status-banner.success { border-color: var(--accent); background: var(--green-bg); }
+    .status-banner.error { border-color: var(--red); background: var(--red-bg); }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Review cards */
+    .review-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 14px; transition: border-color 0.2s; }
+    .review-card.is-approved { border-color: var(--accent); }
+    .review-card.is-posted { background: var(--green-bg); border-color: var(--green); }
+    .review-card.is-skipped { opacity: 0.5; }
+    .review-card.is-posting { opacity: 0.6; pointer-events: none; }
+    .review-card.is-failed { border-color: var(--red); background: var(--red-bg); }
+
+    .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .review-meta { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--muted); flex-shrink: 0; }
+    .reviewer-name { font-weight: 600; font-size: 14px; }
+    .reviewer-date { color: var(--muted); font-size: 12px; }
+    .stars { color: #f0a500; font-size: 14px; letter-spacing: 1px; }
+
+    .category-tag { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .cat-bug { background: var(--red-bg); color: var(--red); }
+    .cat-feature { background: var(--blue-bg); color: var(--blue); }
+    .cat-praise { background: var(--green-bg); color: var(--green); }
+    .cat-complaint { background: var(--yellow-bg); color: var(--yellow); }
+    .cat-question { background: var(--line); color: var(--muted); }
+
+    .review-text { font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; }
+    .response-area { margin-bottom: 12px; }
+    .response-area label { font-size: 12px; font-weight: 600; color: var(--green); margin-bottom: 6px; display: block; }
+    .response-area textarea { border-color: var(--green); border-radius: 10px; width: 100%; padding: 10px 12px; font-size: 14px; line-height: 1.6; font-family: inherit; background: var(--green-bg); color: var(--ink); border: 1px solid; outline: none; resize: vertical; min-height: 80px; }
+    .response-area textarea:focus { border-color: var(--accent); }
+    .reasoning { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 10px; }
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .char-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+    .char-count.over { color: var(--red); }
+
+    /* Progress summary */
+    .progress-bar-wrap { background: var(--line); border-radius: 6px; height: 6px; margin: 8px 0 4px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.4s; }
+    .progress-label { font-size: 12px; color: var(--muted); }
+
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .section-sub { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); font-size: 15px; }
+
+    .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); text-align: center; font-size: 13px; color: var(--muted); }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 600px) {
+      .shell { padding: 16px 16px 80px; }
+      .row { grid-template-columns: 1fr; }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span>Hanzi Browse</span>
+  </div>
+
+  <!-- ── Setup Screen ──────────────────────────────────────── -->
+  <div id="screen-setup">
+    <h1>Reply to your Play Store reviews</h1>
+    <p class="subtitle">Connect your Chrome, enter your app details. AI drafts responses — you approve, then we post them in your Play Console.</p>
+
+    <!-- Browser pairing widget -->
+    <div id="hanzi-widget" style="margin-bottom: 24px;"></div>
+
+    <div class="field">
+      <label>App name <span class="hint">— as it appears in Play Console</span></label>
+      <input type="text" id="app-name" placeholder="e.g. My Awesome App" />
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Package name <span class="hint">— optional</span></label>
+        <input type="text" id="package-name" placeholder="com.example.app" />
+      </div>
+      <div class="field">
+        <label>Support email <span class="hint">— optional</span></label>
+        <input type="email" id="support-email" placeholder="support@example.com" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>What does your app do? <span class="hint">— helps AI write better responses</span></label>
+      <textarea id="app-description" rows="2" placeholder="e.g. A habit tracker that helps users build daily routines"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Response tone</label>
+      <select id="response-tone">
+        <option value="friendly and helpful">Friendly and helpful</option>
+        <option value="professional and concise">Professional and concise</option>
+        <option value="warm and personal">Warm and personal</option>
+        <option value="technical and detailed">Technical and detailed</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="btn-fetch" onclick="startFetch()">
+      Fetch unanswered reviews →
+    </button>
+
+    <div class="footer">
+      Powered by <a href="https://hanzilla.co" target="_blank">Hanzi Browse</a> — give your AI agent a real browser.
+    </div>
+  </div>
+
+  <!-- ── Fetching Screen ───────────────────────────────────── -->
+  <div id="screen-fetching" class="hidden">
+    <h1>Fetching your reviews</h1>
+    <p class="subtitle">Hanzi Browse is navigating Play Console from your Chrome and extracting unanswered reviews.</p>
+
+    <div class="stepper">
+      <div class="step-item done" id="step-1">
+        <div class="step-num">✓</div>
+        <div class="step-label">Connected</div>
+      </div>
+      <div class="step-item active" id="step-2">
+        <div class="step-num">2</div>
+        <div class="step-label">Fetching reviews</div>
+      </div>
+      <div class="step-item" id="step-3">
+        <div class="step-num">3</div>
+        <div class="step-label">Drafting responses</div>
+      </div>
+      <div class="step-item" id="step-4">
+        <div class="step-num">4</div>
+        <div class="step-label">Posting</div>
+      </div>
+    </div>
+
+    <div class="status-banner working" id="fetch-status">
+      <div class="spinner"></div>
+      <span id="fetch-status-text">Opening Play Console in your browser...</span>
+    </div>
+  </div>
+
+  <!-- ── Drafts Screen ─────────────────────────────────────── -->
+  <div id="screen-drafts" class="hidden">
+    <div class="section-title" id="drafts-title">Review AI responses</div>
+    <p class="section-sub" id="drafts-sub">Edit any response before approving. Click "Post all approved" when ready.</p>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+      <button class="btn btn-primary btn-sm" style="width:auto" onclick="postAllApproved()" id="btn-post-all">
+        Post all approved
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="approveAll()">Approve all</button>
+      <button class="btn btn-ghost btn-sm" onclick="startOver()">Start over</button>
+    </div>
+
+    <div id="progress-wrap" class="hidden">
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+      <div class="progress-label" id="progress-label">Posting responses...</div>
+    </div>
+
+    <div id="drafts-list"></div>
+
+    <div class="footer">
+      Powered by <a href="https://hanzilla.co" target="_blank">Hanzi Browse</a> — give your AI agent a real browser.
+    </div>
+  </div>
+
+</div>
+
+<!-- Hanzi embed widget -->
+<script src="/embed.js"></script>
+
+<script>
+  // ── State ────────────────────────────────────────────────────
+  let state = JSON.parse(localStorage.getItem('play-review-state') || '{}');
+  let browserSessionId = null;
+
+  function saveState() {
+    localStorage.setItem('play-review-state', JSON.stringify(state));
+  }
+
+  // ── Hanzi widget init ────────────────────────────────────────
+  window.addEventListener('load', () => {
+    if (window.HanziBrowse) {
+      window.HanziBrowse.mount('hanzi-widget', {
+        onConnect: (sessionId) => {
+          browserSessionId = sessionId;
+          document.getElementById('btn-fetch').disabled = false;
+        },
+        onDisconnect: () => {
+          browserSessionId = null;
+          document.getElementById('btn-fetch').disabled = true;
+        }
+      });
+    }
+
+    // Restore state if any drafts exist
+    if (state.drafts?.length) {
+      showDrafts(state.drafts);
+    }
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function show(id) {
+    ['screen-setup', 'screen-fetching', 'screen-drafts'].forEach(s => {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+  }
+
+  function setFetchStatus(text, type = 'working') {
+    const el = document.getElementById('fetch-status');
+    const textEl = document.getElementById('fetch-status-text');
+    el.className = `status-banner ${type}`;
+    textEl.textContent = text;
+    if (type !== 'working') {
+      el.querySelector('.spinner')?.remove();
+    }
+  }
+
+  function starsHTML(rating) {
+    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  }
+
+  function categoryLabel(cat) {
+    const map = {
+      bug_report: ['Bug report', 'cat-bug'],
+      feature_request: ['Feature request', 'cat-feature'],
+      praise: ['Praise', 'cat-praise'],
+      complaint: ['Complaint', 'cat-complaint'],
+      question: ['Question', 'cat-question'],
+    };
+    const [label, cls] = map[cat] || ['Other', 'cat-question'];
+    return `<span class="category-tag ${cls}">${label}</span>`;
+  }
+
+  function avatarLetter(name) {
+    return (name || '?')[0].toUpperCase();
+  }
+
+  // ── Step 1: Fetch reviews ────────────────────────────────────
+  async function startFetch() {
+    const appName = document.getElementById('app-name').value.trim();
+    if (!appName) { alert('Please enter your app name.'); return; }
+    if (!browserSessionId) { alert('Please connect your browser first.'); return; }
+
+    state.appContext = {
+      name: appName,
+      package_name: document.getElementById('package-name').value.trim(),
+      description: document.getElementById('app-description').value.trim(),
+      tone: document.getElementById('response-tone').value,
+      support_email: document.getElementById('support-email').value.trim(),
+    };
+    saveState();
+
+    show('screen-fetching');
+    setFetchStatus('Opening Play Console in your browser...');
+
+    try {
+      const res = await fetch('/api/fetch-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          browser_session_id: browserSessionId,
+          app_name: appName,
+          package_name: state.appContext.package_name || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      if (!data.reviews?.length) {
+        setFetchStatus('No unanswered reviews found. Your inbox is clear!', 'success');
+        setTimeout(() => show('screen-setup'), 3000);
+        return;
+      }
+
+      setFetchStatus(`Found ${data.reviews.length} unanswered review${data.reviews.length > 1 ? 's' : ''}. Drafting responses...`, 'success');
+
+      // Step 2: draft responses
+      document.getElementById('step-2').className = 'step-item done';
+      document.getElementById('step-3').className = 'step-item active';
+
+      const draftRes = await fetch('/api/draft-responses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviews: data.reviews, app_context: state.appContext }),
+      });
+      const draftData = await draftRes.json();
+      if (!draftRes.ok) throw new Error(draftData.error);
+
+      state.drafts = draftData.drafts;
+      saveState();
+      showDrafts(draftData.drafts);
+
+    } catch (err) {
+      setFetchStatus(`Error: ${err.message}`, 'error');
+    }
+  }
+
+  // ── Show drafts screen ───────────────────────────────────────
+  function showDrafts(drafts) {
+    document.getElementById('drafts-title').textContent =
+      `${drafts.length} review${drafts.length > 1 ? 's' : ''} — review AI responses`;
+    document.getElementById('drafts-sub').textContent =
+      `Edit any response before approving. Approved responses will be posted to your Play Console.`;
+
+    const list = document.getElementById('drafts-list');
+    list.innerHTML = '';
+
+    drafts.forEach((d, i) => renderDraftCard(d, i, list));
+    show('screen-drafts');
+  }
+
+  function renderDraftCard(d, i, container) {
+    const card = document.createElement('div');
+    card.className = `review-card ${d.status === 'posted' ? 'is-posted' : d.status === 'approved' ? 'is-approved' : d.status === 'skipped' ? 'is-skipped' : ''}`;
+    card.id = `card-${d.id}`;
+
+    const charCount = (d.response_text || '').length;
+    const overLimit = charCount > 350;
+
+    card.innerHTML = `
+      <div class="review-header">
+        <div class="review-meta">
+          <div class="avatar">${avatarLetter(d.reviewer)}</div>
+          <div>
+            <div class="reviewer-name">${d.reviewer}</div>
+            <div class="reviewer-date">${d.date || ''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="stars">${starsHTML(d.rating)}</span>
+          ${categoryLabel(d.category)}
+        </div>
+      </div>
+      <div class="review-text">${d.review_text}</div>
+      ${d.reasoning ? `<div class="reasoning">${d.reasoning}</div>` : ''}
+      <div class="response-area">
+        <label>AI draft response</label>
+        <textarea id="resp-${d.id}" oninput="onResponseInput('${d.id}')">${d.response_text || ''}</textarea>
+      </div>
+      <div class="card-actions">
+        ${d.status === 'posted'
+          ? `<span style="color:var(--green);font-weight:600;font-size:13px">✓ Posted</span>`
+          : d.status === 'approved'
+          ? `<button class="btn btn-sm btn-ghost" onclick="unapprove('${d.id}')">Undo approve</button>
+             <span style="color:var(--accent);font-size:13px;font-weight:600">✓ Approved</span>`
+          : `<button class="btn btn-sm btn-approve" onclick="approve('${d.id}')">Approve</button>
+             <button class="btn btn-sm btn-ghost" onclick="skip('${d.id}')">Skip</button>`
+        }
+        <span class="char-count ${overLimit ? 'over' : ''}" id="char-${d.id}">${charCount}/350</span>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  function onResponseInput(id) {
+    const ta = document.getElementById(`resp-${id}`);
+    const count = ta.value.length;
+    const cc = document.getElementById(`char-${id}`);
+    cc.textContent = `${count}/350`;
+    cc.className = `char-count ${count > 350 ? 'over' : ''}`;
+    const d = state.drafts.find(d => d.id === id);
+    if (d) { d.response_text = ta.value; saveState(); }
+  }
+
+  function approve(id) {
+    const d = state.drafts.find(d => d.id === id);
+    if (!d) return;
+    d.status = 'approved';
+    saveState();
+    refreshCard(d);
+  }
+
+  function unapprove(id) {
+    const d = state.drafts.find(d => d.id === id);
+    if (!d) return;
+    d.status = 'pending';
+    saveState();
+    refreshCard(d);
+  }
+
+  function skip(id) {
+    const d = state.drafts.find(d => d.id === id);
+    if (!d) return;
+    d.status = 'skipped';
+    saveState();
+    refreshCard(d);
+  }
+
+  function approveAll() {
+    state.drafts.forEach(d => { if (d.status === 'pending') d.status = 'approved'; });
+    saveState();
+    showDrafts(state.drafts);
+  }
+
+  function refreshCard(draft) {
+    const old = document.getElementById(`card-${draft.id}`);
+    if (!old) return;
+    const i = state.drafts.findIndex(d => d.id === draft.id);
+    const tmp = document.createElement('div');
+    renderDraftCard(draft, i, tmp);
+    old.replaceWith(tmp.firstChild);
+  }
+
+  // ── Post all approved ────────────────────────────────────────
+  async function postAllApproved() {
+    if (!browserSessionId) { alert('Browser disconnected. Please reconnect.'); return; }
+
+    const approved = state.drafts.filter(d => d.status === 'approved');
+    if (!approved.length) { alert('No approved responses yet. Approve at least one first.'); return; }
+
+    document.getElementById('progress-wrap').classList.remove('hidden');
+    document.getElementById('btn-post-all').disabled = true;
+    let posted = 0;
+
+    for (const draft of approved) {
+      const card = document.getElementById(`card-${draft.id}`);
+      if (card) card.className = 'review-card is-posting';
+
+      try {
+        const res = await fetch('/api/post-response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            browser_session_id: browserSessionId,
+            reviewer: draft.reviewer,
+            rating: draft.rating,
+            review_text: draft.review_text,
+            response_text: document.getElementById(`resp-${draft.id}`)?.value || draft.response_text,
+            app_name: state.appContext?.name,
+            package_name: state.appContext?.package_name,
+          }),
+        });
+        const data = await res.json();
+
+        if (data.result === 'complete') {
+          draft.status = 'posted';
+        } else {
+          draft.status = 'failed';
+        }
+      } catch {
+        draft.status = 'failed';
+      }
+
+      posted++;
+      saveState();
+      refreshCard(draft);
+
+      const pct = Math.round((posted / approved.length) * 100);
+      document.getElementById('progress-bar').style.width = `${pct}%`;
+      document.getElementById('progress-label').textContent =
+        `Posted ${posted} of ${approved.length} responses...`;
+
+      if (posted < approved.length) await new Promise(r => setTimeout(r, 2000));
+    }
+
+    document.getElementById('progress-label').textContent =
+      `Done — ${approved.filter(d => d.status === 'posted').length} response${approved.length > 1 ? 's' : ''} posted.`;
+    document.getElementById('btn-post-all').disabled = false;
+  }
+
+  function startOver() {
+    if (!confirm('Start over? This will clear all current drafts.')) return;
+    state = {};
+    saveState();
+    show('screen-setup');
+  }
+</script>
+</body>
+</html>
