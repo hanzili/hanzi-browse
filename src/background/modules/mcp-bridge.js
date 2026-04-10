@@ -580,6 +580,21 @@ async function handleMcpCommand(command) {
           throw new Error(`Unknown credential source: ${source}`);
         }
         const credentials = await importFn();
+        if (source === 'claude') {
+          await chrome.storage.local.set({
+            provider: 'anthropic',
+            apiBaseUrl: 'https://api.anthropic.com/v1/messages',
+            model: 'claude-sonnet-4-20250514',
+            authMethod: 'oauth',
+          });
+        } else if (source === 'codex') {
+          await chrome.storage.local.set({
+            provider: 'codex',
+            apiBaseUrl: 'https://chatgpt.com/backend-api/codex/responses',
+            model: 'gpt-5.1-codex',
+            authMethod: 'codex_oauth',
+          });
+        }
         await loadConfig();
         if (command.requestId) {
           sendToMcpRelay({ type: 'credentials_imported', requestId: command.requestId, success: true, credentials });

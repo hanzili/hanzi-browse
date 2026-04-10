@@ -9,6 +9,15 @@ import { relayRequest, isRelayConnected } from './relay-client.js';
 
 const NATIVE_HOST_NAME = 'com.hanzi_browse.oauth_host';
 
+async function saveCodexRuntimeConfig() {
+  await chrome.storage.local.set({
+    provider: 'codex',
+    apiBaseUrl: 'https://chatgpt.com/backend-api/codex/responses',
+    model: 'gpt-5.1-codex',
+    authMethod: 'codex_oauth',
+  });
+}
+
 /**
  * Import OAuth credentials from Codex CLI installation
  * Reads tokens from ~/.codex/auth.json
@@ -64,6 +73,7 @@ async function importCodexViaRelay() {
     codexAuthState: 'authenticated',
     codexTokenSource: 'codex_cli'
   });
+  await saveCodexRuntimeConfig();
 
   console.log('[Codex OAuth] ✓ Credentials saved to storage');
   return { accessToken, refreshToken, accountId };
@@ -122,6 +132,7 @@ function importCodexViaNativeHost() {
             codexAuthState: 'authenticated',
             codexTokenSource: 'codex_cli'
           });
+          await saveCodexRuntimeConfig();
 
           console.log('[Codex OAuth] ✓ Credentials saved to storage');
 

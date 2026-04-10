@@ -20,6 +20,15 @@ import { relayRequest, isRelayConnected } from './relay-client.js';
 
 const NATIVE_HOST_NAME = 'com.hanzi_browse.oauth_host';
 
+async function saveClaudeRuntimeConfig() {
+  await chrome.storage.local.set({
+    provider: 'anthropic',
+    apiBaseUrl: 'https://api.anthropic.com/v1/messages',
+    model: 'claude-sonnet-4-20250514',
+    authMethod: 'oauth',
+  });
+}
+
 /**
  * Generate cryptographically random string for PKCE
  * @param {number} length - Length of random string
@@ -120,6 +129,7 @@ async function importCLIViaRelay() {
     oauthState: 'authenticated',
     tokenSource: 'claude_cli'
   });
+  await saveClaudeRuntimeConfig();
 
   console.log('[OAuth] ✓ Credentials saved to storage');
   return { accessToken, refreshToken, expiresAt: expiresAtTimestamp };
@@ -180,6 +190,7 @@ function importCLIViaNativeHost() {
             oauthState: 'authenticated',
             tokenSource: 'claude_cli'
           });
+          await saveClaudeRuntimeConfig();
 
           console.log('[OAuth] ✓ Credentials saved to storage');
 

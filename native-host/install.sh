@@ -72,13 +72,30 @@ mkdir -p "$MANIFEST_DIR"
 
 # Extension IDs
 CHROME_STORE_ID="iklpkemlmbhemkiojndpbhoakgikpmcd"  # Production (Chrome Web Store)
-DEV_ID="dnajlkacmnpfmilkeialficajdgkkkfo"          # Development (replace with your own if different)
+DEV_ID="${1:-${HANZI_EXTENSION_ID:-}}"
+
+echo ""
+echo "Chrome extension authorization..."
+echo "  Chrome Web Store ID: $CHROME_STORE_ID"
+echo "  Unpacked extension ID is required for local development."
+echo "  Find it at chrome://extensions with Developer mode enabled."
+
+if [ -z "$DEV_ID" ]; then
+    read -r -p "Enter your unpacked Hanzi extension ID (leave blank to allow only the store build): " DEV_ID
+fi
+
+if [ -n "$DEV_ID" ] && ! [[ "$DEV_ID" =~ ^[a-z]{32}$ ]]; then
+    echo -e "${RED}✗ Invalid extension ID: $DEV_ID${NC}"
+    echo "  Expected 32 lowercase letters, e.g. abcdefghijklmnopqrstuvwxyzabcdef"
+    exit 1
+fi
 
 # Create manifest with both production and development IDs
 MANIFEST_FILE="$MANIFEST_DIR/com.hanzi_browse.oauth_host.json"
 
 echo ""
 echo "Creating manifest file..."
+if [ -n "$DEV_ID" ]; then
 cat > "$MANIFEST_FILE" << EOF
 {
   "name": "com.hanzi_browse.oauth_host",
@@ -91,8 +108,22 @@ cat > "$MANIFEST_FILE" << EOF
   ]
 }
 EOF
-
-echo -e "${GREEN}✓${NC} Configured for both production and development extensions"
+    echo -e "${GREEN}✓${NC} Configured for Chrome Web Store and unpacked extension IDs"
+else
+cat > "$MANIFEST_FILE" << EOF
+{
+  "name": "com.hanzi_browse.oauth_host",
+  "description": "Native bridge for Hanzi Browse extension (IPC between MCP server and extension)",
+  "path": "$WRAPPER_SCRIPT",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://$CHROME_STORE_ID/"
+  ]
+}
+EOF
+    echo -e "${YELLOW}⚠${NC}  Configured only for the Chrome Web Store extension"
+    echo "  Re-run with your unpacked extension ID to enable local development."
+fi
 
 if [ -f "$MANIFEST_FILE" ]; then
     echo -e "${GREEN}✓${NC} Created manifest at: $MANIFEST_FILE"
