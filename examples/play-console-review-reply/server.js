@@ -214,12 +214,22 @@ app.post("/api/fetch-reviews", async (req, res) => {
       ? `IMPORTANT — Account selection rules (follow exactly, no exceptions):
 - The user has chosen the account: ${account_email}
 - Navigate to https://play.google.com/console/
-- If an account chooser appears: click ONLY "${account_email}". Do not click any other account.
-- If "${account_email}" is not in the list: STOP immediately. Return: ACCOUNT_NOT_FOUND: "${account_email}"
-- If already logged in as a DIFFERENT account: STOP immediately. Do NOT switch. Return: WRONG_ACCOUNT: [current account email]
-- NEVER create a developer account, NEVER set up a new account, NEVER try a different account.
-- If ANY unexpected screen appears (setup wizard, payment, verification, etc.): STOP. Describe what you see.
-- Once confirmed logged in as ${account_email}, proceed to fetch reviews.`
+
+Step A — Select the correct account:
+  - If an account chooser appears: click ONLY "${account_email}". Do not click any other account.
+  - If "${account_email}" is not in the chooser list: STOP. Return: ACCOUNT_NOT_FOUND: "${account_email}"
+  - If you land on a Play Console dashboard but the active account is NOT "${account_email}":
+      1. Click the profile picture / account avatar in the top-right corner
+      2. A dropdown appears — look for "${account_email}" in the list
+      3. If found: click "${account_email}" to switch. Wait for the page to reload, then continue.
+      4. If NOT found in the dropdown: STOP. Return: ACCOUNT_NOT_FOUND: "${account_email}"
+  - NEVER sign in with a password. NEVER create an account. NEVER try more than one account switch.
+
+Step B — Verify:
+  - Confirm the dashboard now shows "${account_email}" as the active account before proceeding.
+  - If ANY unexpected screen appears (setup wizard, payment, identity verification, etc.): STOP. Describe exactly what you see.
+
+Only after confirming you are in the correct account, proceed to fetch reviews.`
       : `IMPORTANT — Account selection rules (follow exactly, no exceptions):
 - Navigate to https://play.google.com/console/
 - If Google shows an account chooser with 2 or more accounts: STOP immediately.
