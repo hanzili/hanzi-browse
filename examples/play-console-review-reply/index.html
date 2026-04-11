@@ -374,6 +374,15 @@
   let state = JSON.parse(localStorage.getItem('play-review-state') || '{}');
   let browserSessionId = null;
 
+  // Reset any in-progress posting state from a previous session
+  if (state.drafts) {
+    let changed = false;
+    for (const d of state.drafts) {
+      if (d.status === 'posting') { d.status = 'approved'; changed = true; }
+    }
+    if (changed) localStorage.setItem('play-review-state', JSON.stringify(state));
+  }
+
   function saveState() {
     localStorage.setItem('play-review-state', JSON.stringify(state));
   }
@@ -800,7 +809,7 @@
 
   function renderDraftCard(d, i, container) {
     const card = document.createElement('div');
-    card.className = `review-card ${d.status === 'posted' ? 'is-posted' : d.status === 'approved' ? 'is-approved' : d.status === 'skipped' ? 'is-skipped' : ''}`;
+    card.className = `review-card ${d.status === 'posted' ? 'is-posted' : d.status === 'approved' ? 'is-approved' : d.status === 'skipped' ? 'is-skipped' : d.status === 'failed' ? 'is-failed' : ''}`;
     card.id = `card-${d.id}`;
 
     const charCount = (d.response_text || '').length;
@@ -830,6 +839,9 @@
       <div class="card-actions">
         ${d.status === 'posted'
           ? `<span style="color:var(--green);font-weight:600;font-size:13px">✓ Posted</span>`
+          : d.status === 'failed'
+          ? `<span style="color:var(--red);font-weight:600;font-size:13px">✗ Failed</span>
+             <button class="btn btn-sm btn-ghost" onclick="retryOne('${did}')" style="color:var(--red);border-color:var(--red)">Retry</button>`
           : d.status === 'approved'
           ? `<button class="btn btn-sm btn-ghost" onclick="unapprove('${did}')">Undo approve</button>
              <span style="color:var(--accent);font-size:13px;font-weight:600">✓ Approved</span>`
@@ -930,6 +942,47 @@
   }
 
   // ── Post all approved ────────────────────────────────────────
+  async function retryOne(id) {
+    const d = state.drafts.find(d => d.id === id);
+    if (!d) return;
+    if (!browserSessionId) { toast('Browser disconnected. Please reconnect.'); return; }
+    d.status = 'approved';
+    saveState();
+    refreshCard(d);
+
+    const card = document.getElementById(`card-${id}`);
+    if (card) card.className = 'review-card is-posting';
+
+    try {
+      if (isMockMode) {
+        await new Promise(r => setTimeout(r, 800));
+        d.status = 'posted';
+      } else {
+        const res = await api('/api/post-response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            browser_session_id: browserSessionId,
+            reviewer: d.reviewer,
+            rating: d.rating,
+            review_text: d.review_text,
+            response_text: document.getElementById(`resp-${id}`)?.value || d.response_text,
+            app_name: state.appContext?.name,
+            package_name: state.appContext?.package_name,
+          }),
+        });
+        const data = await res.json();
+        d.status = data.result === 'complete' ? 'posted' : 'failed';
+        if (d.status === 'posted') markReplied(d.review_id || d.id);
+      }
+    } catch {
+      d.status = 'failed';
+    }
+    saveState();
+    refreshCard(d);
+    toast(d.status === 'posted' ? 'Response posted!' : 'Post failed — try again');
+  }
+
   async function postAllApproved() {
     if (!browserSessionId) { alert('Browser disconnected. Please reconnect.'); return; }
 
