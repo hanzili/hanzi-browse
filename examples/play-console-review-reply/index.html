@@ -226,7 +226,16 @@
       <div class="spinner"></div>
       <span id="fetch-status-text">Opening Play Console in your browser...</span>
     </div>
+
+    <div id="cancel-report" class="hidden" style="margin-top:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px" id="cancel-report-title">Agent's last report:</div>
+      <div id="cancel-report-text" style="font-size:13px;color:var(--muted);background:var(--bg);padding:12px;border-radius:10px;line-height:1.6;max-height:200px;overflow-y:auto;white-space:pre-wrap"></div>
+    </div>
+
+    <!-- Back button always visible on fetching screen -->
+    <button class="btn btn-ghost" style="width:100%;margin-top:16px" id="btn-back-fetch" onclick="cancelFetch()">← Cancel and go back</button>
   </div>
+
 
   <!-- ── Drafts Screen ─────────────────────────────────────── -->
   <div id="screen-drafts" class="hidden">
@@ -253,6 +262,22 @@
     </div>
   </div>
 
+</div>
+
+<!-- Back to home — fixed top left, shown on non-setup screens -->
+<div id="floating-back" class="hidden" style="position:fixed;top:16px;left:16px;z-index:1000">
+  <button onclick="cancelFetch();show('screen-setup');hideCancelButton();document.getElementById('floating-back').classList.add('hidden')"
+    style="background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    ← Back to home
+  </button>
+</div>
+
+<!-- Floating stop button — global, shown whenever agent is running -->
+<div id="floating-cancel" class="hidden" style="position:fixed;bottom:28px;right:28px;z-index:1000">
+  <button id="btn-cancel-fetch" onclick="cancelFetch()"
+    style="background:#fff;color:var(--red);border:2px solid var(--red);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);font-weight:700;font-size:14px;padding:12px 22px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px">
+    <span style="font-size:16px">■</span> Stop Agent
+  </button>
 </div>
 
 <!-- Hanzi embed widget -->
@@ -294,6 +319,9 @@
     ['screen-setup', 'screen-fetching', 'screen-drafts'].forEach(s => {
       document.getElementById(s).classList.toggle('hidden', s !== id);
     });
+    // Show back button on all screens except setup
+    const back = document.getElementById('floating-back');
+    if (back) back.classList.toggle('hidden', id === 'screen-setup');
   }
 
   function setFetchStatus(text, type = 'working') {
@@ -360,6 +388,130 @@
     showDrafts(draftData.drafts);
   }
 
+  // ── Cancel fetch ─────────────────────────────────────────────
+  async function cancelFetch() {
+    const btn = document.getElementById('btn-cancel-fetch');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="font-size:16px">■</span> Stopping...';
+    try {
+      await fetch('/api/cancel-fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ browser_session_id: browserSessionId }),
+      });
+    } catch {}
+    // Server will respond to /api/fetch-reviews with cancelled status
+    // showCancelReport() will be called from startFetch()'s catch block
+  }
+
+  // ── Account picker ────────────────────────────────────────────
+  function showAccountPicker(accounts) {
+    hideCancelButton();
+    const spinner = document.querySelector('#fetch-status .spinner');
+    if (spinner) spinner.remove();
+    setFetchStatus('Multiple Google accounts detected. Please choose one.', 'error');
+    document.getElementById('btn-back-fetch').classList.add('hidden');
+
+    const accountListHtml = `
+      <div style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)">
+        ${(accounts.length > 0 ? accounts : ['(unknown)']).map((email, i, arr) => `
+          <button onclick="retryWithAccount('${email}')"
+            style="display:block;width:100%;text-align:left;padding:10px 14px;
+                   border:none;border-bottom:${i < arr.length - 1 ? '1px solid var(--line)' : 'none'};
+                   background:transparent;font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink);line-height:1.4"
+            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+            ${email}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    document.getElementById('cancel-report-title').textContent = 'Which account has your Play Console?';
+    document.getElementById('cancel-report-text').style.cssText = 'padding:0;background:transparent;max-height:none';
+    document.getElementById('cancel-report-text').innerHTML = accountListHtml;
+    document.getElementById('cancel-report').classList.remove('hidden');
+  }
+
+  async function retryWithAccount(email) {
+    document.getElementById('cancel-report').classList.add('hidden');
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    document.getElementById('fetch-status').prepend(spinner);
+    setFetchStatus(`Retrying with ${email}...`);
+    document.getElementById('floating-cancel').classList.remove('hidden');
+    document.getElementById('btn-back-fetch').classList.remove('hidden');
+
+    const appName = state.appContext?.name;
+    try {
+      const res = await fetch('/api/fetch-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          browser_session_id: browserSessionId,
+          app_name: appName,
+          package_name: state.appContext?.package_name || undefined,
+          account_email: email,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.status === 409 && data.multiple_accounts) { showAccountPicker(data.accounts); return; }
+      if (res.status === 499 || data.cancelled) { showCancelReport(data.steps || 0, data.last_action); return; }
+      if (!res.ok) { showCancelReport(data.steps || 0, data.last_action || data.error, false); return; }
+      if (!data.reviews?.length) {
+        hideCancelButton();
+        setFetchStatus('No unanswered reviews found. Your inbox is clear!', 'success');
+        document.getElementById('btn-back-fetch').classList.add('hidden');
+        setTimeout(() => show('screen-setup'), 3000);
+        return;
+      }
+
+      setFetchStatus(`Found ${data.reviews.length} review${data.reviews.length > 1 ? 's' : ''}. Drafting responses...`, 'success');
+      document.getElementById('step-2').className = 'step-item done';
+      document.getElementById('step-3').className = 'step-item active';
+
+      const draftRes = await fetch('/api/draft-responses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviews: data.reviews, app_context: state.appContext }),
+      });
+      const draftData = await draftRes.json();
+      if (!draftRes.ok) throw new Error(draftData.error);
+      state.drafts = draftData.drafts;
+      saveState();
+      hideCancelButton();
+      showDrafts(draftData.drafts);
+    } catch (err) {
+      hideCancelButton();
+      setFetchStatus(`Error: ${err.message}`, 'error');
+    }
+  }
+
+  function showCancelReport(steps, lastAction, isUserCancelled = true) {
+    hideCancelButton();
+    document.getElementById('btn-back-fetch').classList.add('hidden');
+
+    const spinner = document.querySelector('#fetch-status .spinner');
+    if (spinner) spinner.remove();
+
+    if (isUserCancelled) {
+      setFetchStatus(`Stopped by you after ${steps} step${steps !== 1 ? 's' : ''}.`, 'error');
+      document.getElementById('cancel-report-title').textContent = 'What the agent was doing when you stopped it:';
+    } else {
+      setFetchStatus(`Agent encountered an error after ${steps} step${steps !== 1 ? 's' : ''}.`, 'error');
+      document.getElementById('cancel-report-title').textContent = 'What happened:';
+    }
+
+    document.getElementById('cancel-report-text').textContent = lastAction || 'No report available.';
+    document.getElementById('cancel-report').classList.remove('hidden');
+  }
+
+  function hideCancelButton() {
+    const btn = document.getElementById('btn-cancel-fetch');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span style="font-size:16px">■</span> Stop Agent'; }
+    document.getElementById('floating-cancel').classList.add('hidden');
+  }
+
   // ── Step 1: Fetch reviews ────────────────────────────────────
   async function startFetch() {
     const appName = document.getElementById('app-name').value.trim();
@@ -376,6 +528,7 @@
     saveState();
 
     show('screen-fetching');
+    document.getElementById('floating-cancel').classList.remove('hidden');
     setFetchStatus('Opening Play Console in your browser...');
 
     try {
@@ -389,10 +542,45 @@
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+
+      // Multiple accounts detected — ask user to choose
+      if (res.status === 409 && data.multiple_accounts) {
+        showAccountPicker(data.accounts);
+        return;
+      }
+
+      // Account has no Play Console
+      if (res.status === 422 && data.no_play_console) {
+        hideCancelButton();
+        const spinner = document.querySelector('#fetch-status .spinner');
+        if (spinner) spinner.remove();
+        setFetchStatus(`This account doesn't have a Play Console.`, 'error');
+        document.getElementById('cancel-report-title').textContent =
+          `"${data.account || 'This account'}" is not registered as a Google Play developer.`;
+        document.getElementById('cancel-report-text').style.cssText = 'font-size:13px;color:var(--muted);background:var(--bg);padding:12px;border-radius:10px;line-height:1.6';
+        document.getElementById('cancel-report-text').textContent =
+          'To use this tool, you need a Google Play developer account ($25 one-time fee). ' +
+          'If you have another Google account with Play Console, go back and try a different account.';
+        document.getElementById('cancel-report').classList.remove('hidden');
+        document.getElementById('btn-back-fetch').classList.add('hidden');
+        return;
+      }
+
+      // Cancelled by user
+      if (res.status === 499 || data.cancelled) {
+        showCancelReport(data.steps || 0, data.last_action);
+        return;
+      }
+
+      if (!res.ok) {
+        showCancelReport(data.steps || 0, data.last_action || data.error, false);
+        return;
+      }
 
       if (!data.reviews?.length) {
+        hideCancelButton();
         setFetchStatus('No unanswered reviews found. Your inbox is clear!', 'success');
+        document.getElementById('btn-back-fetch').classList.add('hidden');
         setTimeout(() => show('screen-setup'), 3000);
         return;
       }
@@ -413,9 +601,11 @@
 
       state.drafts = draftData.drafts;
       saveState();
+      hideCancelButton();
       showDrafts(draftData.drafts);
 
     } catch (err) {
+      hideCancelButton();
       setFetchStatus(`Error: ${err.message}`, 'error');
     }
   }

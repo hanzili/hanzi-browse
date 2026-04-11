@@ -38,6 +38,23 @@ if (!HANZI_KEY) {
 }
 
 const hanziClient = new HanziClient({ apiKey: HANZI_KEY, baseUrl: HANZI_URL });
+
+// Track active task IDs so we can cancel them
+const activeTasks = new Map(); // browser_session_id → taskId
+
+// ── Session log (in-memory, cleared on restart) ───────────────
+const sessionLog = [];
+function log(level, message, data = {}) {
+  const entry = { ts: new Date().toISOString(), level, message, ...data };
+  sessionLog.push(entry);
+  if (sessionLog.length > 500) sessionLog.shift(); // keep last 500 entries
+  const prefix = level === 'error' ? '[ERROR]' : level === 'warn' ? '[WARN]' : '[INFO]';
+  console.log(`${prefix} ${message}`, Object.keys(data).length ? JSON.stringify(data) : '');
+}
+
+app.get("/api/logs", (_req, res) => {
+  res.json({ logs: sessionLog });
+});
 const HTML = readFileSync(join(__dirname, "index.html"), "utf-8");
 
 // ── Rate Limiting ─────────────────────────────────────────────
@@ -160,8 +177,21 @@ app.post("/api/mock-reviews", (req, res) => {
     { id: "mock-5", reviewer: "Ethan P.", rating: 4, date: "April 4, 2026",
       text: "How do I transfer my data to a new phone? Can't find this in the settings anywhere." },
   ];
-  console.log(`[Mock] Returning ${reviews.length} mock reviews`);
+  log('info', `Mock reviews returned`, { count: reviews.length });
   res.json({ reviews });
+});
+
+// ── Cancel fetch ─────────────────────────────────────────────
+
+app.post("/api/cancel-fetch", async (req, res) => {
+  const { browser_session_id } = req.body;
+  const taskId = activeTasks.get(browser_session_id);
+  if (taskId) {
+    try { await hanziClient.cancelTask(taskId); } catch {}
+    activeTasks.delete(browser_session_id);
+    log('info', 'Task cancelled', { task_id: taskId });
+  }
+  res.json({ cancelled: !!taskId });
 });
 
 // ── Step 1: Fetch Reviews from Play Console ───────────────────
@@ -169,7 +199,7 @@ app.post("/api/mock-reviews", (req, res) => {
 app.post("/api/fetch-reviews", async (req, res) => {
   if (!checkRate(req, res, "fetch")) return;
   try {
-    const { browser_session_id, app_name, package_name } = req.body;
+    const { browser_session_id, app_name, package_name, account_email } = req.body;
     if (!browser_session_id || !app_name) {
       return res.status(400).json({ error: "browser_session_id and app_name required" });
     }
@@ -178,36 +208,99 @@ app.post("/api/fetch-reviews", async (req, res) => {
       ? `app with package name "${package_name}"`
       : `app named "${app_name}"`;
 
-    console.log(`[Browser] Fetching reviews for ${app_name}...`);
+    log('info', 'Fetching reviews', { app_name, account_email: account_email || null });
 
-    const result = await hanziClient.runTask(
-      {
-        browserSessionId: browser_session_id,
-        task: `Go to Google Play Console (https://play.google.com/console/) and fetch recent unanswered user reviews for the ${appIdentifier}.
-
-Steps:
+    const accountSection = account_email
+      ? `IMPORTANT — Account selection:
+You MUST use the Google account: ${account_email}
 1. Navigate to https://play.google.com/console/
-2. Find the ${appIdentifier} in the app list and click on it
-3. In the left sidebar, find "Ratings and reviews" or "User feedback" → click on it
-4. Look for a way to filter to show only reviews WITHOUT a reply (unanswered reviews)
-5. Read all visible unanswered reviews (up to 20)
-6. For each review collect:
+2. If an account chooser appears, click on "${account_email}" to select it. Do NOT stop.
+3. If a different account is currently active, click "Switch accounts" and select "${account_email}".
+4. Once logged in as ${account_email}, proceed to fetch reviews.`
+      : `IMPORTANT — Account selection:
+1. Navigate to https://play.google.com/console/
+2. If Google shows an account chooser with MULTIPLE accounts, STOP immediately.
+   Return exactly this format (list all accounts shown):
+   MULTIPLE_ACCOUNTS: ["email1@gmail.com", "email2@gmail.com", ...]
+   Do NOT click any account. Do NOT proceed further.
+3. If there is only one account, or you are already logged in, continue normally.`;
+
+    const task = await hanziClient.createTask({
+      browserSessionId: browser_session_id,
+      task: `Go to Google Play Console (https://play.google.com/console/) and fetch recent unanswered user reviews for the ${appIdentifier}.
+
+${accountSection}
+
+Fetching steps (only after correct account is active):
+1. Find the ${appIdentifier} in the app list and click on it
+2. In the left sidebar, find "Ratings and reviews" or "User feedback" → click on it
+3. Filter to show only reviews WITHOUT a reply (unanswered reviews)
+4. Read all visible unanswered reviews (up to 20)
+5. For each review collect:
    - Reviewer name
    - Star rating (1-5)
    - Review text (full)
    - Date posted
-   - Review ID or any unique identifier visible in the URL or page
 
 Return a structured list of all reviews found. If no unanswered reviews exist, say so clearly.`,
-      },
-      { timeoutMs: 5 * 60 * 1000 }
-    );
+    });
 
-    console.log(`[Browser] Fetch result: ${result.status} (${result.steps} steps)`);
+    activeTasks.set(browser_session_id, task.id);
+    log('info', 'Task started', { task_id: task.id, app_name, account_email: account_email || null });
+
+    // Poll manually — track last known answer so cancel has something to show
+    const deadline = Date.now() + 5 * 60 * 1000;
+    let result = task;
+    let lastAnswer = "";
+    while (Date.now() < deadline && result.status === "running") {
+      await new Promise(r => setTimeout(r, 3000));
+      result = await hanziClient.getTask(task.id);
+      if (result.answer) lastAnswer = result.answer;
+      log('info', `Task poll: ${result.status}`, { task_id: task.id, steps: result.steps });
+    }
+    activeTasks.delete(browser_session_id);
+    if (result.status === "running") result = { ...result, status: "timeout" };
+    if (!result.answer && lastAnswer) result = { ...result, answer: lastAnswer };
+
+    log('info', 'Task finished', { task_id: task.id, status: result.status, steps: result.steps });
+
+    // Detect multiple accounts signal from agent
+    if (result.answer?.includes("MULTIPLE_ACCOUNTS:")) {
+      const match = result.answer.match(/MULTIPLE_ACCOUNTS:\s*(\[.*?\])/s);
+      let accounts = [];
+      try { accounts = match ? JSON.parse(match[1]) : []; } catch {}
+      log('info', 'Multiple accounts detected', { accounts });
+      return res.status(409).json({ multiple_accounts: true, accounts });
+    }
+
+    // Detect account has no Play Console
+    const noConsoleSignals = [
+      "finish setting up", "complete your account", "verify your identity",
+      "no apps", "you don't have any apps", "create your first app",
+      "developer account", "not a developer"
+    ];
+    if (result.answer && noConsoleSignals.some(s => result.answer.toLowerCase().includes(s))) {
+      log('warn', 'Account has no Play Console', { answer: result.answer });
+      return res.status(422).json({
+        no_play_console: true,
+        account: account_email || null,
+        last_action: result.answer,
+      });
+    }
+
+    if (result.status === "cancelled") {
+      return res.status(499).json({
+        cancelled: true,
+        steps: result.steps,
+        last_action: result.answer || "Agent was stopped before it could report back.",
+      });
+    }
 
     if (result.status !== "complete") {
       return res.status(500).json({
         error: `Browser task ended with status: ${result.status}. Make sure you are logged into Google Play Console in Chrome.`,
+        steps: result.steps,
+        last_action: result.answer || null,
       });
     }
 
@@ -233,10 +326,10 @@ ${result.answer}
 
     const data = extractJSON(parsed);
     const reviews = data?.reviews || [];
-    console.log(`[Strategy] Parsed ${reviews.length} reviews`);
+    log('info', 'Reviews parsed', { count: reviews.length });
     res.json({ reviews, raw_answer: result.answer });
   } catch (err) {
-    console.error("[Browser] Fetch reviews error:", err.message);
+    log('error', 'Fetch reviews error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -250,7 +343,7 @@ app.post("/api/draft-responses", async (req, res) => {
     if (!reviews?.length) return res.status(400).json({ error: "reviews required" });
     if (!app_context) return res.status(400).json({ error: "app_context required" });
 
-    console.log(`[Strategy] Drafting responses for ${reviews.length} reviews...`);
+    log('info', 'Drafting responses', { count: reviews.length });
 
     const result = await llm(
       `You are an experienced mobile app developer responding to Google Play Store reviews.
@@ -306,10 +399,10 @@ Return JSON:
       ...d,
     }));
 
-    console.log(`[Strategy] Drafted ${drafts.length} responses`);
+    log('info', 'Responses drafted', { count: drafts.length });
     res.json({ drafts });
   } catch (err) {
-    console.error("[Strategy] Draft error:", err.message);
+    log('error', 'Draft responses error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -328,7 +421,7 @@ app.post("/api/post-response", async (req, res) => {
       ? `app with package name "${package_name}"`
       : `app named "${app_name}"`;
 
-    console.log(`[Browser] Posting response to review by ${reviewer}...`);
+    log('info', 'Posting response', { reviewer });
 
     const result = await hanziClient.runTask(
       {
@@ -356,10 +449,10 @@ IMPORTANT: Only reply to the review that matches both the reviewer name AND the 
       { timeoutMs: 3 * 60 * 1000 }
     );
 
-    console.log(`[Browser] Post result: ${result.status}`);
+    log('info', 'Post result', { status: result.status, steps: result.steps });
     res.json({ result: result.status, steps: result.steps });
   } catch (err) {
-    console.error("[Browser] Post response error:", err.message);
+    log('error', 'Post response error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
