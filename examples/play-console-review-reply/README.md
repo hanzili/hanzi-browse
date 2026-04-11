@@ -6,11 +6,11 @@ Reply to your Google Play Store reviews automatically. AI reads your unanswered 
 
 ## Screenshots
 
-<img src="./pictures/landing.png" width="600" alt="Landing page" />
+<img src="https://github.com/user-attachments/assets/f4c52acc-3850-416d-afa5-8edbbb697e2c" width="600" alt="Landing page" />
 
-<img src="./pictures/fetching.png" width="600" alt="Fetching reviews" />
+<img src="https://github.com/user-attachments/assets/632575c4-7ff2-4551-b5e7-66253c06018b" width="600" alt="Fetching reviews" />
 
-<img src="./pictures/review_insights+draft_cards.png" width="600" alt="Review insights and draft cards" />
+<img src="https://github.com/user-attachments/assets/1f698ffe-8c07-47a8-bf22-b0a0c7be3428" width="600" alt="Review insights and draft cards" />
 
 ---
 
