@@ -455,7 +455,19 @@
       });
       const data = await res.json();
 
-      if (res.status === 409 && data.multiple_accounts) { showAccountPicker(data.accounts); return; }
+      if (res.status === 409 && data.multiple_accounts) {
+        // Shouldn't happen after account was selected, but show picker again
+        showAccountPicker(data.accounts); return;
+      }
+      if (res.status === 422 && data.account_error) {
+        showErrorReport(`Account problem`, data.last_action || `Could not use "${email}" — the agent stopped.`); return;
+      }
+      if (res.status === 422 && data.no_play_console) {
+        showErrorReport(
+          `"${email}" has no Play Console`,
+          `This Google account isn't registered as a Play developer.\n\nGoogle Play developer accounts require a one-time $25 fee. If you have a different account with Play Console, go back and enter it manually.`
+        ); return;
+      }
       if (res.status === 499 || data.cancelled) { showCancelReport(data.steps || 0, data.last_action); return; }
       if (!res.ok) { showCancelReport(data.steps || 0, data.last_action || data.error, false); return; }
       if (!data.reviews?.length) {
@@ -506,6 +518,18 @@
     document.getElementById('cancel-report').classList.remove('hidden');
   }
 
+  function showErrorReport(title, message) {
+    hideCancelButton();
+    const spinner = document.querySelector('#fetch-status .spinner');
+    if (spinner) spinner.remove();
+    setFetchStatus(title, 'error');
+    document.getElementById('cancel-report-title').textContent = 'Details:';
+    document.getElementById('cancel-report-text').style.cssText = 'font-size:13px;color:var(--muted);background:var(--bg);padding:12px;border-radius:10px;line-height:1.6;white-space:pre-wrap';
+    document.getElementById('cancel-report-text').textContent = message;
+    document.getElementById('cancel-report').classList.remove('hidden');
+    document.getElementById('btn-back-fetch').classList.add('hidden');
+  }
+
   function hideCancelButton() {
     const btn = document.getElementById('btn-cancel-fetch');
     if (btn) { btn.disabled = false; btn.innerHTML = '<span style="font-size:16px">■</span> Stop Agent'; }
@@ -546,6 +570,12 @@
       // Multiple accounts detected — ask user to choose
       if (res.status === 409 && data.multiple_accounts) {
         showAccountPicker(data.accounts);
+        return;
+      }
+
+      // Account problem (wrong account, not found, etc.)
+      if (res.status === 422 && data.account_error) {
+        showErrorReport(`Account problem`, data.last_action || 'The agent could not use the selected account.');
         return;
       }
 

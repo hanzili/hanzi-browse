@@ -211,19 +211,22 @@ app.post("/api/fetch-reviews", async (req, res) => {
     log('info', 'Fetching reviews', { app_name, account_email: account_email || null });
 
     const accountSection = account_email
-      ? `IMPORTANT — Account selection:
-You MUST use the Google account: ${account_email}
-1. Navigate to https://play.google.com/console/
-2. If an account chooser appears, click on "${account_email}" to select it. Do NOT stop.
-3. If a different account is currently active, click "Switch accounts" and select "${account_email}".
-4. Once logged in as ${account_email}, proceed to fetch reviews.`
-      : `IMPORTANT — Account selection:
-1. Navigate to https://play.google.com/console/
-2. If Google shows an account chooser with MULTIPLE accounts, STOP immediately.
-   Return exactly this format (list all accounts shown):
-   MULTIPLE_ACCOUNTS: ["email1@gmail.com", "email2@gmail.com", ...]
-   Do NOT click any account. Do NOT proceed further.
-3. If there is only one account, or you are already logged in, continue normally.`;
+      ? `IMPORTANT — Account selection rules (follow exactly, no exceptions):
+- The user has chosen the account: ${account_email}
+- Navigate to https://play.google.com/console/
+- If an account chooser appears: click ONLY "${account_email}". Do not click any other account.
+- If "${account_email}" is not in the list: STOP immediately. Return: ACCOUNT_NOT_FOUND: "${account_email}"
+- If already logged in as a DIFFERENT account: STOP immediately. Do NOT switch. Return: WRONG_ACCOUNT: [current account email]
+- NEVER create a developer account, NEVER set up a new account, NEVER try a different account.
+- If ANY unexpected screen appears (setup wizard, payment, verification, etc.): STOP. Describe what you see.
+- Once confirmed logged in as ${account_email}, proceed to fetch reviews.`
+      : `IMPORTANT — Account selection rules (follow exactly, no exceptions):
+- Navigate to https://play.google.com/console/
+- If Google shows an account chooser with 2 or more accounts: STOP immediately.
+  Return exactly: MULTIPLE_ACCOUNTS: ["email1@gmail.com", "email2@gmail.com", ...]
+  List ALL accounts visible. Do NOT click any account.
+- If there is only ONE account shown, or you are already logged in: continue normally.
+- NEVER create an account, NEVER sign in, NEVER try to fix account issues.`;
 
     const task = await hanziClient.createTask({
       browserSessionId: browser_session_id,
@@ -271,6 +274,18 @@ Return a structured list of all reviews found. If no unanswered reviews exist, s
       try { accounts = match ? JSON.parse(match[1]) : []; } catch {}
       log('info', 'Multiple accounts detected', { accounts });
       return res.status(409).json({ multiple_accounts: true, accounts });
+    }
+
+    // Detect agent signals
+    if (result.answer?.includes("ACCOUNT_NOT_FOUND:") || result.answer?.includes("WRONG_ACCOUNT:")) {
+      const detail = result.answer.match(/(ACCOUNT_NOT_FOUND|WRONG_ACCOUNT):\s*(.+)/)?.[2]?.trim();
+      log('warn', 'Account signal from agent', { signal: result.answer });
+      return res.status(422).json({
+        account_error: true,
+        account: account_email || null,
+        last_action: result.answer,
+        detail,
+      });
     }
 
     // Detect account has no Play Console
