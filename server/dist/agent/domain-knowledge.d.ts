@@ -1,10 +1,11 @@
 /**
- * Domain-specific knowledge for the server-side agent loop.
- * Matches the extension's domain-skills.js but only includes domains
- * relevant to managed/API tasks.
+ * Domain-specific knowledge for the agent loop.
+ * Single source of truth — shared between server (managed API, MCP)
+ * and extension (via import at build time).
  */
 interface DomainEntry {
     domain: string;
+    antiBot?: boolean;
     skill: string;
 }
 /**
@@ -12,4 +13,8 @@ interface DomainEntry {
  * Returns the first matching entry, or null.
  */
 export declare function getDomainSkill(url: string): DomainEntry | null;
+/**
+ * Get all domain skills. Used by extension to import the full list.
+ */
+export declare function getAllDomainSkills(): DomainEntry[];
 export {};

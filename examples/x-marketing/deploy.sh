@@ -34,7 +34,7 @@ PORT=3002
 HANZI_API_KEY=hic_live_c7ec32b4b45be235147e83d985c4c8d7067b720228b6b4f2fe04f6dd0a1ddab4
 LLM_BASE_URL=http://127.0.0.1:8003/claude
 ANTHROPIC_API_KEY=ccproxy
-POSTHOG_API_KEY=phc_SNXFKD8YOBPvBNWWZnuCe7stDsJJNJ5WS8MujKhajIF
+POSTHOG_API_KEY=
 NODE_ENV=production
 ENVEOF
 echo '.env already exists, skipping'"

@@ -5,7 +5,8 @@ import { App } from './App';
 import './style.css';
 
 const SENTRY_DSN = 'https://35cbd9c4c23a9e941f292b2ec68adf3b@o4511120870932480.ingest.us.sentry.io/4511120907960320';
-const POSTHOG_KEY = 'phc_SNXFKD8YOBPvBNWWZnuCe7stDsJJNJ5WS8MujKhajIF';
+const POSTHOG_KEY = __POSTHOG_KEY__;
+const POSTHOG_HOST = __POSTHOG_HOST__;
 
 if (SENTRY_DSN && !SENTRY_DSN.startsWith('__')) {
   Sentry.init({
@@ -16,7 +17,7 @@ if (SENTRY_DSN && !SENTRY_DSN.startsWith('__')) {
 
 if (POSTHOG_KEY && !POSTHOG_KEY.startsWith('__')) {
   posthog.init(POSTHOG_KEY, {
-    api_host: 'https://us.i.posthog.com',
+    api_host: POSTHOG_HOST,
     autocapture: true,
     capture_pageview: true,
     persistence: 'localStorage',

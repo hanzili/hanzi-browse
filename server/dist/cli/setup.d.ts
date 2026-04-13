@@ -10,6 +10,8 @@ interface AgentConfig {
     method: 'json-merge' | 'cli-command';
     detect: () => boolean;
     configPath?: () => string;
+    configSection?: 'mcpServers' | 'servers' | 'context_servers';
+    legacyConfigSections?: ('mcpServers' | 'servers' | 'context_servers')[];
     cliCommand?: string;
     skillsDir?: () => string;
 }
@@ -22,6 +24,7 @@ interface AgentRegistryDeps {
     home?: string;
     plat?: NodeJS.Platform;
     appData?: string;
+    xdgConfigHome?: string;
     pathExists?: (path: string) => boolean;
     runCommand?: (command: string, options?: any) => Buffer | string;
 }
@@ -41,6 +44,7 @@ interface BrowserDetectionDeps {
 }
 export declare function getAgentRegistry(deps?: AgentRegistryDeps): AgentConfig[];
 export declare function mergeJsonConfig(configPath: string, deps?: JsonConfigDeps): SetupResult;
+export declare function mergeJsonConfigAtKey(configPath: string, configSection: 'mcpServers' | 'servers' | 'context_servers', deps?: JsonConfigDeps, legacyConfigSections?: ('mcpServers' | 'servers' | 'context_servers')[]): SetupResult;
 interface BrowserInfo {
     name: string;
     slug: string;

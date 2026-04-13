@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  define: {
+    __POSTHOG_KEY__: JSON.stringify(process.env.POSTHOG_API_KEY || ''),
+    __POSTHOG_HOST__: JSON.stringify(process.env.POSTHOG_HOST || 'https://us.i.posthog.com'),
+  },
   base: '/dashboard/',
   esbuild: {
     jsxFactory: 'h',

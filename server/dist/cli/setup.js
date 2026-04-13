@@ -69,6 +69,7 @@ export function getAgentRegistry(deps = {}) {
     const home = deps.home ?? homedir();
     const plat = deps.plat ?? platform();
     const appData = deps.appData ?? process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
+    const xdgConfigHome = deps.xdgConfigHome ?? process.env.XDG_CONFIG_HOME ?? join(home, '.config');
     const pathExists = deps.pathExists ?? existsSync;
     const runCommand = deps.runCommand ?? execSync;
     const hasCli = (bin) => {
@@ -112,8 +113,38 @@ export function getAgentRegistry(deps = {}) {
             slug: 'vscode',
             method: 'json-merge',
             configPath: () => join(home, '.vscode', 'mcp.json'),
+            configSection: 'servers',
+            legacyConfigSections: ['mcpServers'],
             skillsDir: () => join(home, '.vscode', 'skills'),
             detect: () => pathExists(join(home, '.vscode')),
+        },
+        {
+            name: 'Zed',
+            slug: 'zed',
+            method: 'json-merge',
+            configPath: () => {
+                if (plat === 'darwin')
+                    return join(home, 'Library', 'Application Support', 'Zed', 'settings.json');
+                if (plat === 'win32')
+                    return join(appData, 'Zed', 'settings.json');
+                return join(xdgConfigHome, 'zed', 'settings.json');
+            },
+            configSection: 'context_servers',
+            detect: () => {
+                if (plat === 'darwin')
+                    return pathExists(join(home, 'Library', 'Application Support', 'Zed'));
+                if (plat === 'win32')
+                    return pathExists(join(appData, 'Zed'));
+                return pathExists(join(xdgConfigHome, 'zed'));
+            },
+        },
+        {
+            name: 'Neovim',
+            slug: 'neovim',
+            method: 'json-merge',
+            configPath: () => join(xdgConfigHome, 'mcphub', 'servers.json'),
+            configSection: 'servers',
+            detect: () => pathExists(join(xdgConfigHome, 'mcphub')),
         },
         {
             name: 'Codex',
@@ -181,6 +212,24 @@ function stripJsonComments(text) {
         .replace(/\/\*[\s\S]*?\*\//g, '');
 }
 export function mergeJsonConfig(configPath, deps = {}) {
+    return mergeJsonConfigAtKey(configPath, 'mcpServers', deps);
+}
+function removeLegacyHanziEntries(config, configSection, legacyConfigSections = []) {
+    let changed = false;
+    for (const legacySection of legacyConfigSections) {
+        if (legacySection === configSection)
+            continue;
+        const section = config[legacySection];
+        if (section && typeof section === 'object' && section['hanzi-browser']) {
+            delete section['hanzi-browser'];
+            changed = true;
+            if (Object.keys(section).length === 0)
+                delete config[legacySection];
+        }
+    }
+    return changed;
+}
+export function mergeJsonConfigAtKey(configPath, configSection, deps = {}, legacyConfigSections = []) {
     const agentName = configPath;
     const pathExists = deps.pathExists ?? existsSync;
     const readTextFile = deps.readTextFile ?? readFileSync;
@@ -190,7 +239,7 @@ export function mergeJsonConfig(configPath, deps = {}) {
     try {
         if (!pathExists(configPath)) {
             ensureDir(join(configPath, '..'), { recursive: true });
-            const config = { mcpServers: { "hanzi-browser": MCP_ENTRY } };
+            const config = { [configSection]: { "hanzi-browser": MCP_ENTRY } };
             writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
             return { agent: agentName, status: 'configured', detail: `created ${configPath}` };
         }
@@ -206,20 +255,25 @@ export function mergeJsonConfig(configPath, deps = {}) {
             catch {
                 const bakPath = configPath + '.bak';
                 copyFile(configPath, bakPath);
-                config = { mcpServers: { "hanzi-browser": MCP_ENTRY } };
+                config = { [configSection]: { "hanzi-browser": MCP_ENTRY } };
                 writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
                 return { agent: agentName, status: 'configured', detail: `backed up malformed config to ${bakPath}` };
             }
         }
-        if (config.mcpServers?.["hanzi-browser"]) {
-            const existing = config.mcpServers["hanzi-browser"];
+        const removedLegacyEntry = removeLegacyHanziEntries(config, configSection, legacyConfigSections);
+        if (config[configSection]?.["hanzi-browser"]) {
+            const existing = config[configSection]["hanzi-browser"];
             if (existing.command === MCP_ENTRY.command && JSON.stringify(existing.args) === JSON.stringify(MCP_ENTRY.args)) {
+                if (removedLegacyEntry) {
+                    writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
+                    return { agent: agentName, status: 'configured', detail: `migrated legacy hanzi-browser entry in ${configPath}` };
+                }
                 return { agent: agentName, status: 'already-configured', detail: configPath };
             }
         }
-        if (!config.mcpServers)
-            config.mcpServers = {};
-        config.mcpServers["hanzi-browser"] = MCP_ENTRY;
+        if (!config[configSection])
+            config[configSection] = {};
+        config[configSection]["hanzi-browser"] = MCP_ENTRY;
         writeTextFile(configPath, JSON.stringify(config, null, 2) + '\n');
         return { agent: agentName, status: 'configured', detail: `merged into ${configPath}` };
     }
@@ -563,8 +617,10 @@ async function injectManagedKey(apiKey, agents) {
                 if (existsSync(configPath)) {
                     const raw = readFileSync(configPath, 'utf-8');
                     const config = JSON.parse(raw);
-                    if (config.mcpServers?.["hanzi-browser"]) {
-                        config.mcpServers["hanzi-browser"] = managedEntry;
+                    const configSection = agent.configSection ?? 'mcpServers';
+                    removeLegacyHanziEntries(config, configSection, agent.legacyConfigSections ?? []);
+                    if (config[configSection]?.["hanzi-browser"]) {
+                        config[configSection]["hanzi-browser"] = managedEntry;
                         writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
                         console.log(`     ${c.green('✓')}  Updated ${agent.name} with managed API key`);
                     }
@@ -707,7 +763,7 @@ function getSkillsSource() {
     const fromSrc = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills');
     return fromSrc;
 }
-const SKILL_NAMES = ['hanzi-browse', 'e2e-tester', 'social-poster', 'linkedin-prospector', 'a11y-auditor', 'x-marketer'];
+const SKILL_NAMES = ['hanzi-browse', 'e2e-tester', 'social-poster', 'linkedin-prospector', 'a11y-auditor', 'data-extractor', 'x-marketer'];
 async function installSkills(agents, isInteractive) {
     const skillsSource = getSkillsSource();
     if (!existsSync(skillsSource))
@@ -872,7 +928,7 @@ export async function runSetup(options = {}) {
             result = runClaudeCodeSetup();
         }
         else {
-            result = mergeJsonConfig(agent.configPath());
+            result = mergeJsonConfigAtKey(agent.configPath(), agent.configSection ?? 'mcpServers', {}, agent.legacyConfigSections ?? []);
         }
         results.push({ ...result, agent: agent.name });
         await sleep(150);

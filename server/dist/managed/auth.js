@@ -146,13 +146,11 @@ export async function resolveSessionProfile(req) {
         // Extract session token from cookie (handles both __Secure- and plain prefix)
         const cookieHeader = req.headers.cookie || '';
         const tokenMatch = cookieHeader.match(/better-auth[.\-]session_token=([^;]+)/);
-        console.error(`[AUTH] step1: match=${!!tokenMatch} cookieLen=${cookieHeader.length}`);
         if (!tokenMatch)
             return null;
         // Token format: "rawToken.signature" — we only need the raw token for DB lookup
         const rawValue = decodeURIComponent(tokenMatch[1]);
         const token = rawValue.split('.')[0];
-        console.error(`[AUTH] step2: token=${token.substring(0, 10)}... rawLen=${rawValue.length}`);
         if (!token)
             return null;
         const db = getProvisionPool();
@@ -160,12 +158,10 @@ export async function resolveSessionProfile(req) {
        FROM session s
        JOIN "user" u ON u.id = s."userId"
        WHERE s.token = $1 LIMIT 1`, [token]);
-        console.error(`[AUTH] step3: rows=${sessionRes.rows.length}`);
         if (sessionRes.rows.length === 0)
             return null;
         const row = sessionRes.rows[0];
         // Check expiry
-        console.error(`[AUTH] step4: userId=${row.userId} expires=${row.expiresAt} expired=${new Date(row.expiresAt) < new Date()}`);
         if (new Date(row.expiresAt) < new Date())
             return null;
         const wsRes = await db.query(`SELECT wm.workspace_id, w.name as workspace_name
@@ -173,7 +169,6 @@ export async function resolveSessionProfile(req) {
        JOIN workspaces w ON w.id = wm.workspace_id
        WHERE wm.user_id = $1
        ORDER BY wm.created_at ASC LIMIT 1`, [row.userId]);
-        console.error(`[AUTH] step5: wsRows=${wsRes.rows.length}`);
         if (wsRes.rows.length === 0)
             return null;
         return {

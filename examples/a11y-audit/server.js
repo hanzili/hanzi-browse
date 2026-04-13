@@ -10,7 +10,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
-const POSTHOG_KEY = process.env.POSTHOG_API_KEY || "phc_SNXFKD8YOBPvBNWWZnuCe7stDsJJNJ5WS8MujKhajIF";
+const POSTHOG_KEY = process.env.POSTHOG_API_KEY || "";
+const POSTHOG_HOST = process.env.POSTHOG_HOST || "https://us.i.posthog.com";
 const HANZI_KEY = process.env.HANZI_API_KEY;
 const HANZI_URL = process.env.HANZI_API_URL || "https://api.hanzilla.co";
 const LLM_KEY = process.env.ANTHROPIC_API_KEY || "ccproxy";
@@ -23,7 +24,10 @@ if (!HANZI_KEY) {
   process.exit(1);
 }
 
-const HTML = readFileSync(join(__dirname, "index.html"), "utf-8");
+const POSTHOG_SNIPPET = POSTHOG_KEY
+  ? `<script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init(${JSON.stringify(POSTHOG_KEY)},{api_host:${JSON.stringify(POSTHOG_HOST)},person_profiles:'anonymous'})</script>`
+  : "";
+const HTML = readFileSync(join(__dirname, "index.html"), "utf-8").replace("__POSTHOG_SNIPPET__", POSTHOG_SNIPPET);
 const hanziClient = new HanziClient({ apiKey: HANZI_KEY, baseUrl: HANZI_URL });
 
 const rateLimits = new Map();
@@ -31,7 +35,7 @@ const LIMITS = { plan: 8, audit: 12, report: 8 };
 
 function track(event, properties = {}, ip) {
   if (!POSTHOG_KEY) return;
-  fetch("https://us.i.posthog.com/capture/", {
+  fetch(`${POSTHOG_HOST}/capture/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

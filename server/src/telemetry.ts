@@ -22,8 +22,8 @@ const CONFIG_DIR = join(homedir(), ".hanzi-browse");
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 const SENTRY_DSN = "https://2d5504c5db572b0b2709e64f03bdfcc6@o4511120870932480.ingest.us.sentry.io/4511120907698176";
-const POSTHOG_KEY = "phc_SNXFKD8YOBPvBNWWZnuCe7stDsJJNJ5WS8MujKhajIF";
-const POSTHOG_HOST = "https://us.i.posthog.com";
+const POSTHOG_KEY = process.env.POSTHOG_API_KEY || "";
+const POSTHOG_HOST = process.env.POSTHOG_HOST || "https://us.i.posthog.com";
 
 let posthog: PostHog | null = null;
 let anonymousId: string | null = null;
@@ -89,7 +89,7 @@ export function initTelemetry(): void {
   } catch {}
 
   // Don't init SDKs if placeholders haven't been replaced
-  if (SENTRY_DSN.startsWith("__") || POSTHOG_KEY.startsWith("__")) return;
+  if (SENTRY_DSN.startsWith("__") || !POSTHOG_KEY || POSTHOG_KEY.startsWith("__")) return;
 
   enabled = isTelemetryEnabled();
   if (!enabled) return;

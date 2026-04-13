@@ -129,6 +129,8 @@ browser_start("Check hotel prices in Shibuya")
 | `HANZI_BROWSE_MAX_SESSIONS` | `5` | Max concurrent browser tasks |
 | `HANZI_BROWSE_TIMEOUT_MS` | `300000` | Task timeout (ms) |
 | `WS_RELAY_PORT` | `7862` | WebSocket relay port |
+| `POSTHOG_API_KEY` | unset | Enables PostHog analytics for local CLI telemetry, the dashboard build, the managed backend, and example apps |
+| `POSTHOG_HOST` | `https://us.i.posthog.com` | Override the PostHog host for all server-side capture calls and dashboard initialization |
 
 ## Skills
 

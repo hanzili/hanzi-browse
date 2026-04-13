@@ -215,6 +215,7 @@ Optional services:
 - **Google OAuth** (dashboard sign-in) -- add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` to `.env`
 - **Stripe** (credit purchases) -- add test keys to `.env`
 - **Vertex AI** (managed task execution) -- see `.env.example` for setup steps
+- **PostHog** (analytics) -- add `POSTHOG_API_KEY` to enable local CLI telemetry, dashboard analytics, managed backend analytics, and the example apps; optionally set `POSTHOG_HOST`
 
 ### Load the extension
 
