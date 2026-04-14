@@ -141,6 +141,10 @@
 <body>
 <script src="embed.js"></script>
 __POSTHOG_SNIPPET__
+<div class="hanzi-promo" style="background:#1a1a1a;color:#fafaf8;padding:10px 20px;text-align:center;font-size:13px;border-bottom:1px solid #000;">
+  A free demo of <a href="https://browse.hanzilla.co" target="_blank" style="color:#e9c792;font-weight:600;text-decoration:none">Hanzi Browse</a> — give your AI agent a real browser. Install: <code style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;color:#fff">npx hanzi-browse setup</code>
+</div>
+
 <div class="shell">
   <div class="brand" role="banner">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#1a1a1a"/><path d="M7 7v10M17 7v10M7 12h10" stroke="#fafaf8" stroke-width="2.5" stroke-linecap="round"/></svg>
@@ -149,9 +153,10 @@ __POSTHOG_SNIPPET__
 
   <main id="app"></main>
 
-  <div style="text-align:center;padding:24px 0 8px;font-size:12px;color:var(--muted)">
-    Built with <a href="https://browse.hanzilla.co" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">Hanzi Browse</a>
-  </div>
+  <footer style="margin-top:48px;padding:24px;text-align:center;border-top:1px solid var(--line, #e5ddd0);font-size:14px;color:var(--muted)">
+    <div style="margin-bottom:10px">Like this? Post unlimited replies with your own Hanzi Browse account.</div>
+    <a href="https://browse.hanzilla.co" target="_blank" style="display:inline-block;padding:10px 20px;background:var(--accent, #ad5a34);color:#fff;border-radius:10px;text-decoration:none;font-weight:600">Install Hanzi Browse &rarr;</a>
+  </footer>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

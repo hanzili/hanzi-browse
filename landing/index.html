@@ -814,6 +814,7 @@
                 Hanzi
             </a>
             <nav class="header-links" aria-label="Main navigation">
+                <a class="link-pill" href="#free-tools">Free tools</a>
                 <a class="link-pill" href="docs.html">Docs</a>
                 <a class="link-pill" href="#pricing">Pricing</a>
                 <a class="link-pill" href="https://discord.gg/hahgu5hcA5" target="_blank" rel="noreferrer" aria-label="Discord (opens in new tab)">Discord</a>
@@ -829,10 +830,13 @@
                     <h1>Give your AI agent a real browser.</h1>
                     <p>Your agent stops when it needs a browser. <strong>Hanzi lets it keep going</strong> — using your real signed-in Chrome session.</p>
                     <div class="hero-actions">
-                        <a class="btn btn-green" href="#use-hanzi">Use Hanzi</a>
-                        <a class="btn btn-purple" href="#build-with-hanzi">Build with Hanzi</a>
+                        <a class="btn btn-green" href="#use-hanzi">Get started — it's free</a>
+                        <a class="btn btn-green" href="#free-tools" style="background: transparent; color: var(--green); border: 1.5px solid var(--green);">Try it live</a>
                         <button class="btn btn-signin-hero" onclick="hanziSignIn()">Sign in &rarr;</button>
                     </div>
+                    <p style="margin-top: 14px; font-size: 13px; color: var(--muted);">
+                        Building a product? <a href="#build-with-hanzi" style="color: var(--purple); font-weight: 600;">Use the API &rarr;</a>
+                    </p>
                 </div>
 
                 <div class="demo-panel">
@@ -960,6 +964,51 @@
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <!-- Free Tools -->
+            <section class="section" id="free-tools">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker green">Free tools</div>
+                        <h2>Try Hanzi in 2&nbsp;minutes — no install.</h2>
+                    </div>
+                    <p>Each tool is a live demo of what your own AI agent can do once you install Hanzi. Paste a URL, pair your browser, watch it run.</p>
+                </div>
+
+                <div class="path-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+                    <a class="path-card" href="https://tools.hanzilla.co/x-marketing/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="X Marketing free tool (opens in new tab)">
+                        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green);">X / Twitter</div>
+                        <h3 style="margin-top: 6px;">X Marketing</h3>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">Drops into a conversation in your niche, drafts a reply in your voice, posts from your real X account.</p>
+                        <p style="font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px;">Try it &rarr;</p>
+                    </a>
+
+                    <a class="path-card" href="https://tools.hanzilla.co/a11y-audit/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="Accessibility Audit free tool (opens in new tab)">
+                        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green);">Accessibility</div>
+                        <h3 style="margin-top: 6px;">A11y Audit</h3>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">Real-browser WCAG 2.1 audit. Checks contrast, keyboard nav, ARIA, and semantic HTML with screenshots.</p>
+                        <p style="font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px;">Try it &rarr;</p>
+                    </a>
+
+                    <a class="path-card" href="https://tools.hanzilla.co/qa-tester/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="QA Tester free tool (opens in new tab)">
+                        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green);">QA</div>
+                        <h3 style="margin-top: 6px;">QA Tester</h3>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">Paste your web app URL. AI tests the golden path, reports real bugs with severity and repro steps.</p>
+                        <p style="font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px;">Try it &rarr;</p>
+                    </a>
+
+                    <a class="path-card" href="https://tools.hanzilla.co/play-console-review-reply/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="Play Console Review Reply free tool (opens in new tab)">
+                        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green);">Google Play</div>
+                        <h3 style="margin-top: 6px;">Play Console Review Reply</h3>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">Fetches unanswered reviews, drafts responses in your voice, posts them to Play Console with your approval.</p>
+                        <p style="font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px;">Try it &rarr;</p>
+                    </a>
+                </div>
+
+                <p style="text-align: center; margin-top: 22px; font-size: 14px; color: var(--muted);">
+                    Like these? <a href="#use-hanzi" style="color: var(--green); font-weight: 600;">Install Hanzi</a> to run them unlimited from your own agent — plus 11 more skills.
+                </p>
             </section>
 
             <!-- Build with Hanzi -->

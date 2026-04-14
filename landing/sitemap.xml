@@ -2,22 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://browse.hanzilla.co/</loc>
-    <lastmod>2026-04-03</lastmod>
+    <lastmod>2026-04-14</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://browse.hanzilla.co/docs.html</loc>
-    <lastmod>2026-04-03</lastmod>
+    <lastmod>2026-04-12</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://browse.hanzilla.co/pricing.html</loc>
-    <lastmod>2026-03-25</lastmod>
+    <lastmod>2026-04-11</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://browse.hanzilla.co/linkedin-prospector.html</loc>
-    <lastmod>2026-04-02</lastmod>
+    <lastmod>2026-04-11</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
@@ -27,7 +27,7 @@
   </url>
   <url>
     <loc>https://browse.hanzilla.co/social-poster.html</loc>
-    <lastmod>2026-04-02</lastmod>
+    <lastmod>2026-04-14</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
@@ -37,7 +37,27 @@
   </url>
   <url>
     <loc>https://browse.hanzilla.co/a11y-auditor.html</loc>
-    <lastmod>2026-04-03</lastmod>
+    <lastmod>2026-04-12</lastmod>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://tools.hanzilla.co/x-marketing/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tools.hanzilla.co/a11y-audit/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tools.hanzilla.co/qa-tester/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tools.hanzilla.co/play-console-review-reply/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <priority>0.7</priority>
   </url>
 </urlset>
