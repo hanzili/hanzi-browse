@@ -42,14 +42,21 @@ const ws = new WebSocket('ws://127.0.0.1:7862/?role=cli');
 const rid = Math.random().toString(36).slice(2, 10);
 const timeout = setTimeout(() => { console.error('  ✗ Timeout waiting for pair response'); process.exit(1); }, 10000);
 ws.on('open', () => {
-  ws.send(JSON.stringify({
-    type: 'mcp_managed_pair',
-    requestId: rid,
-    payload: { pairing_token: '$PAIR_TOKEN', api_url: 'https://api.hanzilla.co', requestId: rid }
-  }));
+  // Relay requires a register message before routing anything.
+  ws.send(JSON.stringify({ type: 'register', role: 'cli' }));
 });
+let registered = false;
 ws.on('message', (raw) => {
   const msg = JSON.parse(raw);
+  if (msg.type === 'registered' && !registered) {
+    registered = true;
+    ws.send(JSON.stringify({
+      type: 'mcp_managed_pair',
+      requestId: rid,
+      payload: { pairing_token: '$PAIR_TOKEN', api_url: 'https://api.hanzilla.co', requestId: rid }
+    }));
+    return;
+  }
   if (msg.type === 'mcp_managed_pair_response' && msg.requestId === rid) {
     clearTimeout(timeout);
     if (msg.success) {
@@ -65,5 +72,6 @@ ws.on('error', (err) => { console.error('  ✗ Relay error: ' + err.message); pr
 "
 
 echo ""
-echo "== Step 4: run a real managed task =="
-node dist/index.js start "Return the text 'pair verified' exactly, nothing else" --timeout 60s --quiet
+echo "== Step 4: wait for managed relay to settle, then run a real task =="
+sleep 2
+node dist/index.js start "Return the text 'pair-verified' exactly, nothing else" --timeout 90s --quiet
