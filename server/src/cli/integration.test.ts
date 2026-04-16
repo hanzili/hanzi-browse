@@ -137,3 +137,17 @@ describe('Binary consolidation (hanzi-browse dispatches subcommands to CLI)', ()
     expect(stdout).not.toContain('Hanzi Browser CLI');
   });
 });
+
+describe('--version', () => {
+  it('prints the package version and exits 0', async () => {
+    const { stdout, code } = await runCli(['--version']);
+    expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(code).toBe(0);
+  });
+
+  it('-v is an alias', async () => {
+    const { stdout, code } = await runCli(['-v']);
+    expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(code).toBe(0);
+  });
+});

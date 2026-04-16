@@ -482,6 +482,13 @@ async function cmdSetup(): Promise<void> {
   await runSetup({ only, yes, all, skills });
 }
 
+function cmdVersion(): void {
+  const pkgPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  console.log(pkg.version);
+  process.exit(0);
+}
+
 function cmdHelp(): void {
   console.log(`
 Hanzi Browser CLI - Browser automation from the command line
@@ -575,6 +582,7 @@ async function main(): Promise<void> {
     case 'screenshot': await cmdScreenshot(); break;
     case 'skills': await cmdSkills(); break;
     case 'setup': await cmdSetup(); break;
+    case 'version': case '--version': case '-v': cmdVersion(); break;
     case 'help': case '--help': case '-h': case undefined: cmdHelp(); break;
     default:
       console.error(`Unknown command: ${command}`);
