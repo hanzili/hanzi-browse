@@ -888,6 +888,62 @@
         .track-card.purple ul.proofs li::before { color: var(--purple); }
         .track-card ul.proofs li strong { display: block; font-weight: 700; margin-bottom: 2px; }
 
+        .faq-list {
+            display: grid;
+            gap: 10px;
+            max-width: 820px;
+            margin: 0 auto;
+        }
+        .faq-item {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+        .faq-item[open] {
+            border-color: #d9cbb8;
+        }
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 18px 22px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ink);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+        }
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+        .faq-item summary::after {
+            content: "+";
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--muted);
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .faq-item[open] summary::after {
+            content: "–";
+        }
+        .faq-item .faq-body {
+            padding: 0 22px 20px;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+        .faq-item .faq-body code {
+            font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+            font-size: 13px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #f1eadf;
+            color: var(--ink);
+        }
+
         @media (max-width: 980px) {
             .hero,
             .section-head,
@@ -1284,6 +1340,43 @@ console.log(result.answer);</pre>
                             <li>Unlimited tasks</li>
                         </ul>
                     </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section class="section" id="faq">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">FAQ</div>
+                        <h2>Questions people actually&nbsp;ask.</h2>
+                    </div>
+                    <p>Short answers. Open any to expand.</p>
+                </div>
+                <div class="faq-list">
+                    <details class="faq-item">
+                        <summary>How is Hanzi different from Playwright, Puppeteer, or Browserbase?</summary>
+                        <div class="faq-body">Those spin up a fresh, clean browser in a sandbox — you re-login, fight CAPTCHAs, maintain cookies. Hanzi attaches to your <em>existing</em> Chrome via the DevTools Protocol, so sites see the session you're already logged into: Gmail, LinkedIn, your bank, your company's admin tools. No login automation, no session replay, no detection arms race.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Which AI agents does Hanzi work with?</summary>
+                        <div class="faq-body">Claude Code, Cursor, Codex, Windsurf, VS Code Copilot, Gemini CLI, Amp, Cline, Roo Code, Kiro, Antigravity, and OpenCode. <code>npx hanzi-browse setup</code> detects every agent installed on your machine and merges Hanzi into each one's MCP config automatically — you don't hand-edit JSON.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Do I need a new API key, or can I reuse my Claude Pro / ChatGPT Plus subscription?</summary>
+                        <div class="faq-body">Reuse what you already pay for. In BYOM mode, Hanzi reads credentials from Claude Code's OAuth, Codex's <code>auth.json</code>, the macOS Keychain, or a plain API key — whichever you have. If you already pay for Claude Pro/Max or GPT Plus, it's effectively free. No extra billing.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Does my browsing data go to Hanzi's servers?</summary>
+                        <div class="faq-body">Depends on the mode. <strong>BYOM:</strong> nothing touches Hanzi servers — screenshots go directly from your machine to the AI provider you picked. <strong>Managed:</strong> pages and screenshots are processed by Google Vertex AI (Gemini) and not retained beyond the task. Hanzi never tracks browsing outside active tasks and doesn't sell data.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>What is MCP, and why does Hanzi use it?</summary>
+                        <div class="faq-body">MCP (Model Context Protocol) is how modern AI agents load external tools. Hanzi ships as an MCP server, so any MCP-compatible agent gains five browser tools — <code>browser_start</code>, <code>browser_message</code>, <code>browser_status</code>, <code>browser_stop</code>, <code>browser_screenshot</code> — as soon as setup runs. No agent rebuild, no plugin marketplace.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Can I embed Hanzi in my own product?</summary>
+                        <div class="faq-body">Yes. There's a REST API and a TypeScript SDK (<code>@hanzi-browse/sdk</code>). Your user pairs their browser once via a pairing link, then your backend calls <code>client.runTask(...)</code> against their session. Billing is $0.05 per completed task — errors and timeouts are always free.</div>
+                    </details>
                 </div>
             </section>
 
