@@ -11,7 +11,7 @@ describe('CLI JSON output helpers', () => {
   it('builds task completion payloads', () => {
     expect(buildTaskCompletePayload('abc123', { title: 'Example Domain' })).toEqual({
       session_id: 'abc123',
-      status: 'completed',
+      status: 'complete',
       result: { title: 'Example Domain' },
     });
   });

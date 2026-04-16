@@ -3,7 +3,7 @@ import type { SessionFileStatus } from './session-files.js';
 export function buildTaskCompletePayload(sessionId: string, result: unknown) {
   return {
     session_id: sessionId,
-    status: 'completed',
+    status: 'complete',
     result,
   };
 }
