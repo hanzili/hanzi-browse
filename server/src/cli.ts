@@ -633,6 +633,10 @@ Skills:
 // --- Main ---
 
 async function main(): Promise<void> {
+  const invokedAs = process.argv[1] ? process.argv[1].split('/').pop() : '';
+  if (invokedAs === 'hanzi-browser') {
+    console.error('\x1b[33m[deprecation]\x1b[0m `hanzi-browser` is deprecated. Use `hanzi-browse` instead. Will be removed in v2.5.');
+  }
   switch (command) {
     case 'start': await cmdStart(); break;
     case 'status': cmdStatus(); break;

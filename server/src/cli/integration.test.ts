@@ -409,3 +409,27 @@ describe('--quiet / --verbose', () => {
     expect(stderr).toContain('pondering');
   });
 });
+
+describe('end-to-end: parallel detached tasks + status --json', () => {
+  let relay: MockRelay;
+  beforeAll(async () => { relay = await MockRelay.start(); });
+  afterAll(async () => { await relay.stop(); });
+
+  it('runs 3 parallel --detach starts, then reads each via status --json', async () => {
+    const starts = await Promise.all([
+      runCli(['start', 'A', '--detach'], { HANZI_RELAY_URL: `ws://127.0.0.1:${relay.port}` }),
+      runCli(['start', 'B', '--detach'], { HANZI_RELAY_URL: `ws://127.0.0.1:${relay.port}` }),
+      runCli(['start', 'C', '--detach'], { HANZI_RELAY_URL: `ws://127.0.0.1:${relay.port}` }),
+    ]);
+    const ids = starts.map(s => s.stdout.trim());
+    expect(new Set(ids).size).toBe(3);
+    starts.forEach(s => expect(s.code).toBe(0));
+
+    for (const id of ids) {
+      const { stdout, code } = await runCli(['status', id, '--json']);
+      expect(code).toBe(0);
+      const parsed = JSON.parse(stdout);
+      expect(parsed.session_id).toBe(id);
+    }
+  });
+});
