@@ -29,7 +29,7 @@
       --line: #e5ddd0; --accent: #ad5a34; --accent-hover: #8d4524;
       --green: #2f4a3d; --green-bg: #eef5f0; --blue: #1d6fa5; --blue-bg: #eef3f8;
       --red: #9a2e2e; --red-bg: #fef0ef;
-      --approved-bg: var(--approved-bg); --direct-bg: var(--direct-bg); --direct-text: var(--direct-text); --placeholder: var(--placeholder);
+      --approved-bg: #eef5f0; --direct-bg: #eef3f8; --direct-text: #1d6fa5; --placeholder: #a8a095;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -352,7 +352,7 @@ function renderSetup() {
 
     <div class="field">
       <label for="f-name">Product name</label>
-      <input id="f-name" placeholder="e.g. Hanzi Browse" value="${esc(product?.name)}" />
+      <input id="f-name" placeholder="e.g. Linear, Notion, Slack" value="${esc(product?.name)}" />
     </div>
     <div class="field">
       <label for="f-url">Website <span class="hint">(we'll read it for better results)</span></label>
@@ -691,8 +691,8 @@ async function ensureBrowser() {
   return new Promise(resolve => {
     if (typeof HanziConnect !== 'undefined') {
       $('app').innerHTML = `
-        <h1>Connect your browser</h1>
-        <p class="subtitle">This tool needs the Hanzi Browse extension to search and post on X.</p>
+        <h1>Connect your real browser</h1>
+        <p class="subtitle">This tool posts from <strong>your actual X account</strong> — no fake accounts, no tokens to manage. That means it needs to attach to your real Chrome via the Hanzi Browse extension. Takes ~30 seconds. You approve every reply before it's posted.</p>
         <div id="hanzi-pair-widget" style="max-width:440px"></div>
         <button class="btn btn-ghost btn-sm" id="refresh-connection" style="margin-top:12px;width:100%" onclick="this.textContent='Checking...';this.disabled=true">I've completed pairing \u2014 check again</button>
       `;
