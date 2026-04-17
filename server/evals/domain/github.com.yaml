@@ -1,0 +1,17 @@
+domain: github.com
+cases:
+  - id: issue-title
+    task: "Return the exact title of issue #25 at https://github.com/facebook/react/issues/25"
+    url: "https://github.com/facebook/react/issues/25"
+    success_check:
+      type: agent_answer_contains
+      substring: "Prevent bubbling"
+    timeout_sec: 60
+
+  - id: file-finder-shortcut
+    task: "Open https://github.com/facebook/react, open the file finder (press 't'), and return the path of the first match for 'Reconciler'."
+    url: "https://github.com/facebook/react"
+    success_check:
+      type: agent_answer_contains
+      substring: "Reconciler"
+    timeout_sec: 90

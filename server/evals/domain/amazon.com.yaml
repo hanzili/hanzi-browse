@@ -1,0 +1,9 @@
+domain: amazon.com
+cases:
+  - id: sponsored-vs-organic
+    task: "Search Amazon for 'mechanical keyboard'. Return the brand name of the first result and say whether it is labeled Sponsored."
+    url: "https://www.amazon.com/s?k=mechanical+keyboard"
+    success_check:
+      type: llm_judge
+      prompt: "Does this answer identify a specific keyboard brand AND clearly state whether the top result is sponsored or organic? Answer yes or no."
+    timeout_sec: 120

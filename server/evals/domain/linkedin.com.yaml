@@ -1,0 +1,9 @@
+domain: linkedin.com
+cases:
+  - id: my-headline
+    task: "Open my LinkedIn profile and return my current headline (the short phrase under my name)."
+    url: "https://www.linkedin.com/in/me/"
+    success_check:
+      type: llm_judge
+      prompt: "Does this answer appear to be a LinkedIn profile headline — a short professional phrase, not an error message or 'I could not find…'? Answer yes or no."
+    timeout_sec: 120

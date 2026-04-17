@@ -1,0 +1,9 @@
+domain: mail.google.com
+cases:
+  - id: unread-count
+    task: "How many unread messages are in my Gmail inbox right now? Return just the number."
+    url: "https://mail.google.com/mail/u/0/#inbox"
+    success_check:
+      type: llm_judge
+      prompt: "Does this answer consist of a single number (optionally followed by 'unread' or similar) and nothing else? Answer yes or no."
+    timeout_sec: 90
