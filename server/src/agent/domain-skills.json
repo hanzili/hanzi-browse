@@ -2,7 +2,7 @@
   {
     "domain": "mail.google.com",
     "skill": "Gmail best practices:\n- To open an email, click directly on the email subject/preview text, NOT the checkbox or star\n- Use keyboard shortcuts: 'c' to compose, 'r' to reply, 'a' to reply all, 'f' to forward, 'e' to archive\n- To search, use the search bar at the top with operators like 'from:', 'to:', 'subject:', 'is:unread'\n- Reading pane may be on the right or below depending on user settings - check which layout is active\n- Verification codes are often in emails from 'noreply@' addresses with subjects containing 'verification', 'code', or 'confirm'",
-    "lastVerified": "2026-04-16",
+    "lastVerified": "2026-04-17",
     "goldenTasks": "evals/domain/mail.google.com.yaml"
   },
   {
@@ -34,7 +34,7 @@
     "domain": "linkedin.com",
     "antiBot": true,
     "skill": "LinkedIn UI patterns:\n\n## Messaging & Connections\n- To message someone: first check if you're connected (1st degree) - if not, send a connection request first\n- Connection request: go to their profile, click 'Connect' button, optionally add a note\n- Once connected, use the 'Message' button on their profile or go to Messaging tab\n- InMail (messaging non-connections) requires Premium subscription\n\n## Easy Apply Forms\n- Contact Info page is pre-filled from LinkedIn profile - don't try to modify, just click Next\n- Modal forms may need scrolling to see all content and buttons\n- Use screenshots over read_page for modals - accessibility tree often misses modal content\n\n## Navigation\n- Main tabs: Home (feed), My Network, Jobs, Messaging, Notifications\n- Job search: Jobs tab → filter by location, experience level, date posted\n- 'Easy Apply' = apply within LinkedIn; 'Apply' = external site\n- Profile sections are collapsible - click 'Show all' to expand",
-    "lastVerified": "2026-04-16",
+    "lastVerified": "2026-04-17",
     "goldenTasks": "evals/domain/linkedin.com.yaml"
   },
   {
@@ -84,13 +84,13 @@
     "domain": "x.com",
     "antiBot": true,
     "skill": "X/Twitter — verified patterns (updated 2026-03-30)\n\n## Reading pages (CRITICAL)\n- X loads content asynchronously — page looks empty for 3-5 seconds after navigation.\n- read_page often returns ONLY \"To view keyboard shortcuts\" — tweets haven't loaded yet.\n- DO NOT re-navigate to the same URL. That resets loading and makes it worse.\n- Instead: wait 5 seconds, then use get_page_text — it reads visible text and is more reliable.\n- If get_page_text returns nothing, scroll down once and try again.\n\n## Search\n- URL: x.com/search?q={encoded_query}&src=typed_query&f=live\n- After navigating, wait 5 seconds, then get_page_text (NOT read_page).\n- Scroll down once to load more tweets, then get_page_text again.\n- Tweet URLs in page text follow pattern: /status/{id}\n\n## Text input (CRITICAL — Draft.js)\n- form_input DOES NOT WORK — Draft.js ignores programmatic input.\n- computer type action GARBLES TEXT.\n- ONLY RELIABLE METHOD — use javascript_tool:\n  document.querySelector('[data-testid=\"tweetTextarea_0\"]').focus();\n  document.execCommand('insertText', false, 'your reply text here');\n- Always verify text appeared by reading after insertion.\n\n## Replying to a tweet\n1. Navigate to tweet URL (x.com/{handle}/status/{id})\n2. Wait 3 seconds, read the page\n3. Click the reply/comment icon (speech bubble) in the action bar\n4. Use javascript_tool to insert text (see above)\n5. Verify text appeared, then click blue \"Reply\" button\n6. Wait 2 seconds to confirm reply posted\n\n## Known traps\n- DO NOT scroll looking for \"Post your reply\" — reply box appears after clicking comment icon\n- x.com/compose/post may open — that's fine, type and click Reply there\n- \"Leave site?\" dialog — ALWAYS click Cancel, finish posting first\n- Reply button is disabled until text is entered — verify first\n- Space replies 15+ seconds apart (rate limiting)\n- NEVER navigate to the same URL you're already on",
-    "lastVerified": "2026-04-16",
+    "lastVerified": "2026-04-17",
     "goldenTasks": "evals/domain/x.com.yaml"
   },
   {
     "domain": "amazon.com",
     "skill": "Amazon UI patterns:\n- Prefer the top search bar or a direct search URL for product discovery\n- The first fold may be dominated by sponsored modules or Amazon brand carousels before standard results\n- Result cards can show total price, unit price, ratings, delivery promises, variation links, and inline Add to Cart buttons all at once\n- Watch carefully for subtle labels such as 'Sponsored' or 'Featured from Amazon brands'\n- Location/shipping prompts can change delivery wording and result context, so verify destination-sensitive text before extracting prices",
-    "lastVerified": "2026-04-16",
+    "lastVerified": "2026-04-17",
     "goldenTasks": "evals/domain/amazon.com.yaml"
   },
   {
