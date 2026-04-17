@@ -20,7 +20,7 @@
   {
     "domain": "github.com",
     "skill": "GitHub best practices:\n- Repository navigation: Code tab for files, Issues for bug tracking, Pull requests for code review\n- To view a file, click on the filename in the file tree\n- Use 't' to open file finder, 'l' to jump to a line\n- In PRs: 'Files changed' tab shows diffs, 'Conversation' tab shows comments\n- Use the search bar with qualifiers: 'is:open is:pr', 'is:issue label:bug'",
-    "lastVerified": "2026-04-16",
+    "lastVerified": "2026-04-17",
     "goldenTasks": "evals/domain/github.com.yaml"
   },
   {
