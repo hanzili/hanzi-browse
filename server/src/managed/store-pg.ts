@@ -43,6 +43,8 @@ export interface Workspace {
   freeTasksResetAt: number;
 }
 
+export type SessionSource = "self" | "dashboard" | "partner" | "test";
+
 export interface PairingToken {
   token: string;
   workspaceId: string;
@@ -52,6 +54,8 @@ export interface PairingToken {
   consumed: boolean;
   label?: string;
   externalUserId?: string;
+  /** Trusted origin category — server-set, never from partner input. */
+  source: SessionSource;
 }
 
 export interface BrowserSession {
@@ -65,6 +69,8 @@ export interface BrowserSession {
   windowId?: number;
   label?: string;
   externalUserId?: string;
+  /** Trusted origin category, inherited from the pairing token. */
+  source: SessionSource;
 }
 
 export interface TaskRun {
@@ -334,15 +340,16 @@ export async function deleteApiKey(id: string, workspaceId: string): Promise<boo
 export async function createPairingToken(
   workspaceId: string,
   apiKeyId: string | null,
-  metadata?: { label?: string; externalUserId?: string }
+  metadata?: { label?: string; externalUserId?: string; source?: SessionSource }
 ): Promise<PairingToken & { _plainToken: string }> {
   const plainToken = `hic_pair_${randomBytes(32).toString("hex")}`;
   const tokenHash = hashSecret(plainToken);
   const now = Date.now();
   const expiresAt = now + 5 * 60 * 1000;
+  const source: SessionSource = metadata?.source ?? "partner";
   await db().query(
-    "INSERT INTO pairing_tokens (token_hash, workspace_id, created_by, created_at, expires_at, label, external_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-    [tokenHash, workspaceId, apiKeyId, new Date(now), new Date(expiresAt), metadata?.label || null, metadata?.externalUserId || null]
+    "INSERT INTO pairing_tokens (token_hash, workspace_id, created_by, created_at, expires_at, label, external_user_id, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+    [tokenHash, workspaceId, apiKeyId, new Date(now), new Date(expiresAt), metadata?.label || null, metadata?.externalUserId || null, source]
   );
   return {
     token: tokenHash,
@@ -353,6 +360,7 @@ export async function createPairingToken(
     consumed: false,
     label: metadata?.label,
     externalUserId: metadata?.externalUserId,
+    source,
     _plainToken: plainToken,
   };
 }
@@ -376,9 +384,10 @@ export async function consumePairingToken(pairingTokenStr: string): Promise<Brow
   const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const expiresAt = now + SESSION_TTL_MS;
 
+  const source: SessionSource = (pt.source as SessionSource | undefined) ?? "partner";
   await db().query(
-    "INSERT INTO browser_sessions (id, workspace_id, session_token_hash, status, connected_at, last_heartbeat, expires_at, label, external_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-    [sessionId, pt.workspace_id, sessionTokenHash, "connected", new Date(now), new Date(now), new Date(expiresAt), pt.label || null, pt.external_user_id || null]
+    "INSERT INTO browser_sessions (id, workspace_id, session_token_hash, status, connected_at, last_heartbeat, expires_at, label, external_user_id, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+    [sessionId, pt.workspace_id, sessionTokenHash, "connected", new Date(now), new Date(now), new Date(expiresAt), pt.label || null, pt.external_user_id || null, source]
   );
 
   return {
@@ -390,6 +399,7 @@ export async function consumePairingToken(pairingTokenStr: string): Promise<Brow
     lastHeartbeat: now,
     label: pt.label || undefined,
     externalUserId: pt.external_user_id || undefined,
+    source,
   } as BrowserSession;
 }
 
@@ -412,6 +422,9 @@ export async function validateSessionToken(sessionToken: string): Promise<Browse
     lastHeartbeat: new Date(r.last_heartbeat).getTime(),
     tabId: r.tab_id,
     windowId: r.window_id,
+    label: r.label || undefined,
+    externalUserId: r.external_user_id || undefined,
+    source: (r.source as SessionSource | undefined) ?? "partner",
   };
 }
 
@@ -465,6 +478,7 @@ function rowToSession(r: any): BrowserSession {
     windowId: r.window_id,
     label: r.label || undefined,
     externalUserId: r.external_user_id || undefined,
+    source: (r.source as SessionSource | undefined) ?? "partner",
   };
 }
 

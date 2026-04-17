@@ -144,7 +144,7 @@ export async function handlePageRoutes(
     try {
       const wsKeys = await S.listApiKeys(session.workspaceId);
       const createdBy = wsKeys.length > 0 ? wsKeys[0].id : session.workspaceId;
-      const token = await S.createPairingToken(session.workspaceId, createdBy, { label: "Sidepanel" });
+      const token = await S.createPairingToken(session.workspaceId, createdBy, { label: "Sidepanel", source: "self" });
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(getSelfPairPageHtml(token._plainToken, req.headers.host || ""));
     } catch (err: any) {

@@ -158,6 +158,30 @@ ALTER TABLE pairing_tokens ADD COLUMN IF NOT EXISTS external_user_id TEXT;
 ALTER TABLE browser_sessions ADD COLUMN IF NOT EXISTS label TEXT;
 ALTER TABLE browser_sessions ADD COLUMN IF NOT EXISTS external_user_id TEXT;
 
+-- Migration: trusted `source` enum — set by the server, never by partner input.
+-- Distinguishes first-party flows (self, dashboard) from partner/SDK pairings,
+-- so the app can show/filter differently without string-matching labels.
+-- Values: 'self' | 'dashboard' | 'partner' | 'test'. Default 'partner'.
+ALTER TABLE pairing_tokens ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'partner'
+  CHECK (source IN ('self', 'dashboard', 'partner', 'test'));
+ALTER TABLE browser_sessions ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'partner'
+  CHECK (source IN ('self', 'dashboard', 'partner', 'test'));
+
+-- Backfill existing rows from the old label heuristic. Safe to re-run because
+-- it only touches rows still at the default 'partner'.
+UPDATE pairing_tokens SET source = 'self'
+  WHERE source = 'partner' AND label = 'Sidepanel';
+UPDATE pairing_tokens SET source = 'dashboard'
+  WHERE source = 'partner' AND label IN ('User pairing link', 'Developer testing');
+UPDATE pairing_tokens SET source = 'test'
+  WHERE source = 'partner' AND label IN ('verify-script', 'eval-smoke', 'eval-smoke-2');
+UPDATE browser_sessions SET source = 'self'
+  WHERE source = 'partner' AND label = 'Sidepanel';
+UPDATE browser_sessions SET source = 'dashboard'
+  WHERE source = 'partner' AND label IN ('User pairing link', 'Developer testing');
+UPDATE browser_sessions SET source = 'test'
+  WHERE source = 'partner' AND label IN ('verify-script', 'eval-smoke', 'eval-smoke-2');
+
 -- Migration: drop FK on pairing_tokens.created_by so it can hold user IDs too
 -- The constraint name varies by DB; drop by scanning pg_constraint if it exists.
 DO $$

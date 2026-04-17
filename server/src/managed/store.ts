@@ -62,6 +62,8 @@ export interface TaskRun {
   turns?: any[];
 }
 
+export type SessionSource = "self" | "dashboard" | "partner" | "test";
+
 export interface PairingToken {
   token: string;
   workspaceId: string;
@@ -73,6 +75,13 @@ export interface PairingToken {
   label?: string;
   /** Partner's own user identifier for mapping sessions to their users */
   externalUserId?: string;
+  /**
+   * Trusted origin category, set by the server based on the pairing route.
+   * Never populated from partner input. 'partner' is the conservative default
+   * so anything touching /v1/browser-sessions/pair without explicit server
+   * context gets the least-trusted label.
+   */
+  source: SessionSource;
 }
 
 export interface BrowserSession {
@@ -91,6 +100,8 @@ export interface BrowserSession {
   label?: string;
   /** Partner's own user identifier (inherited from pairing token) */
   externalUserId?: string;
+  /** Trusted origin category, inherited from the pairing token. */
+  source: SessionSource;
 }
 
 export interface UsageEvent {
@@ -328,7 +339,7 @@ const PAIRING_TOKEN_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export function createPairingToken(
   workspaceId: string,
   apiKeyId: string,
-  metadata?: { label?: string; externalUserId?: string }
+  metadata?: { label?: string; externalUserId?: string; source?: SessionSource }
 ): PairingToken & { _plainToken: string } {
   const plainToken = `hic_pair_${randomBytes(32).toString("hex")}`;
   const tokenHash = hashSecret(plainToken);
@@ -341,6 +352,7 @@ export function createPairingToken(
     consumed: false,
     label: metadata?.label,
     externalUserId: metadata?.externalUserId,
+    source: metadata?.source ?? "partner",
   };
   data.pairingTokens[tokenHash] = token;
   save();
@@ -377,6 +389,7 @@ export function consumePairingToken(pairingTokenStr: string): BrowserSession | n
     revoked: false,
     label: pt.label,
     externalUserId: pt.externalUserId,
+    source: pt.source ?? "partner",
   };
   data.browserSessions[session.id] = session;
   save();
