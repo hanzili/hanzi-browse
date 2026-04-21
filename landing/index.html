@@ -959,6 +959,184 @@
             margin: 0 auto;
         }
 
+        /* Skills showcase grid */
+        .skills-showcase {
+            margin-top: 28px;
+        }
+
+        .skills-showcase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .skills-showcase-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .skills-showcase-header a {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-dark);
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .skill-card {
+            display: block;
+            padding: 16px 16px 14px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--surface);
+            transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-2px);
+            border-color: #d9cbb8;
+            box-shadow: 0 6px 18px rgba(54, 38, 23, 0.06);
+        }
+
+        .skill-card .skill-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .skill-icon {
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8f0ec;
+            color: var(--green);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .skill-icon.accent { background: #fceee4; color: var(--accent-dark); }
+        .skill-icon.purple { background: #e8e4f0; color: var(--purple); }
+
+        .skill-card h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.005em;
+        }
+
+        .skill-card p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        /* Featured free tool card (X Marketing) */
+        .free-tool-featured {
+            position: relative;
+            padding: 28px 24px 24px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background:
+                linear-gradient(135deg, rgba(47, 74, 61, 0.06), rgba(173, 90, 52, 0.04) 60%, transparent),
+                var(--surface);
+            overflow: hidden;
+        }
+
+        .free-tool-featured::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle at top right, rgba(47, 74, 61, 0.1), transparent 70%);
+            pointer-events: none;
+        }
+
+        .free-tool-featured .featured-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--green);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .free-tool-mock {
+            margin-top: 16px;
+            border: 1px solid #e5ddd0;
+            border-radius: 12px;
+            background: #fffdf8;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(54, 38, 23, 0.06);
+            /* Always light — simulates the light-themed X Marketing tool */
+            color: #1f1711;
+        }
+
+        .free-tool-mock-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #f3ede2;
+            border-bottom: 1px solid #e5ddd0;
+        }
+
+        .free-tool-mock-bar .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #d9cbb8;
+        }
+
+        .free-tool-mock-bar .dot.r { background: #e78e78; }
+        .free-tool-mock-bar .dot.y { background: #e8c66a; }
+        .free-tool-mock-bar .dot.g { background: #8fb89b; }
+
+        .free-tool-mock-bar .url {
+            margin-left: 8px;
+            font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+            font-size: 11px;
+            color: #6d6256;
+        }
+
+        .free-tool-mock-body {
+            padding: 14px 14px 16px;
+            font-size: 12px;
+            line-height: 1.55;
+            color: #1f1711;
+        }
+
+        .free-tool-mock-body .q {
+            color: #6d6256;
+            margin-bottom: 6px;
+        }
+
+        .free-tool-mock-body .reply {
+            padding: 10px 12px;
+            border-left: 3px solid #2f4a3d;
+            background: rgba(47, 74, 61, 0.05);
+            border-radius: 0 8px 8px 0;
+            color: #1f1711;
+        }
+
         @media (max-width: 980px) {
             .hero,
             .section-head,
@@ -969,6 +1147,15 @@
             .prompt-grid,
             .two-tracks,
             .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .skills-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            .skills-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -1217,10 +1404,62 @@
 
                     <div class="path-card">
                         <h3>What you can do with it</h3>
-                        <p style="font-size: 15px; color: var(--muted); line-height: 1.65; margin-top: 10px;">Setup ships open-source skills for common workflows — social posting, accessibility audits, data extraction, QA testing. Your agent picks the right one for the task.</p>
+                        <p style="font-size: 15px; color: var(--muted); line-height: 1.65; margin-top: 10px;">Setup ships open-source skills for common workflows. Your agent picks the right one for the task — or you can mention the skill by name.</p>
                         <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">
-                            <a href="https://github.com/hanzili/hanzi-browse/tree/main/server/skills" target="_blank" rel="noreferrer" style="color: var(--accent-dark); font-weight: 600;" aria-label="Browse skills on GitHub (opens in new tab)">Browse skills on GitHub &rarr;</a>
+                            <a href="https://github.com/hanzili/hanzi-browse/tree/main/server/skills" target="_blank" rel="noreferrer" style="color: var(--accent-dark); font-weight: 600;" aria-label="Browse skills on GitHub (opens in new tab)">Browse all skills on GitHub &rarr;</a>
                         </p>
+                    </div>
+                </div>
+
+                <!-- Skills showcase grid -->
+                <div class="skills-showcase">
+                    <div class="skills-showcase-header">
+                        <h3>Skills that ship with setup</h3>
+                        <a href="https://github.com/hanzili/hanzi-browse/tree/main/server/skills" target="_blank" rel="noreferrer" aria-label="See all skills on GitHub (opens in new tab)">See all skills &rarr;</a>
+                    </div>
+                    <div class="skills-grid">
+                        <a class="skill-card" href="e2e-tester.html" data-analytics="skill_card_click">
+                            <div class="skill-top">
+                                <span class="skill-icon">QA</span>
+                                <h4>E2E Tester</h4>
+                            </div>
+                            <p>Clicks through flows in a real browser, reports bugs with screenshots and code refs.</p>
+                        </a>
+                        <a class="skill-card" href="social-poster.html" data-analytics="skill_card_click">
+                            <div class="skill-top">
+                                <span class="skill-icon accent">SP</span>
+                                <h4>Social Poster</h4>
+                            </div>
+                            <p>Draft once, post to LinkedIn, X, Reddit, HN &amp; Product Hunt — each tuned per platform.</p>
+                        </a>
+                        <a class="skill-card" href="x-marketer.html" data-analytics="skill_card_click">
+                            <div class="skill-top">
+                                <span class="skill-icon">XM</span>
+                                <h4>X Marketer</h4>
+                            </div>
+                            <p>Finds high-value conversations, posts contextual replies from your real X account.</p>
+                        </a>
+                        <a class="skill-card" href="linkedin-prospector.html" data-analytics="skill_card_click">
+                            <div class="skill-top">
+                                <span class="skill-icon purple">LI</span>
+                                <h4>LinkedIn Prospector</h4>
+                            </div>
+                            <p>Finds prospects and sends personalized connection notes — never templated.</p>
+                        </a>
+                        <a class="skill-card" href="a11y-auditor.html" data-analytics="skill_card_click">
+                            <div class="skill-top">
+                                <span class="skill-icon accent">A11</span>
+                                <h4>Accessibility Auditor</h4>
+                            </div>
+                            <p>Real-browser WCAG 2.1 AA audits — contrast, focus, keyboard nav, ARIA, screenshots.</p>
+                        </a>
+                        <a class="skill-card" href="https://github.com/hanzili/hanzi-browse/tree/main/server/skills/data-extractor" target="_blank" rel="noreferrer" data-analytics="skill_card_click" aria-label="Data Extractor skill on GitHub (opens in new tab)">
+                            <div class="skill-top">
+                                <span class="skill-icon purple">DX</span>
+                                <h4>Data Extractor</h4>
+                            </div>
+                            <p>Scrapes tables, directories, and listings into CSV or JSON — even logged-in pages.</p>
+                        </a>
                     </div>
                 </div>
             </section>
@@ -1299,11 +1538,25 @@ console.log(result.answer);</pre>
                 </div>
 
                 <div class="path-grid" style="gap: 18px;">
-                    <a class="path-card" href="https://tools.hanzilla.co/x-marketing/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="X Marketing free tool (opens in new tab)">
-                        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green);">X / Twitter</div>
-                        <h3 style="margin-top: 6px;">X Marketing</h3>
-                        <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">Drops into a conversation in your niche, drafts a reply in your voice, posts from your real X account.</p>
-                        <p style="font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px;">Try it &rarr;</p>
+                    <a class="free-tool-featured" href="https://tools.hanzilla.co/x-marketing/" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block;" aria-label="X Marketing free tool (opens in new tab)" data-analytics="free_tool_click">
+                        <span class="featured-badge">Live · Try free</span>
+                        <h3 style="margin-top: 4px;">X Marketing</h3>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 8px; max-width: 42ch;">Finds a conversation in your niche, drafts a reply in your voice, and posts from your real X account — no install required.</p>
+
+                        <div class="free-tool-mock" aria-hidden="true">
+                            <div class="free-tool-mock-bar">
+                                <span class="dot r"></span>
+                                <span class="dot y"></span>
+                                <span class="dot g"></span>
+                                <span class="url">tools.hanzilla.co/x-marketing</span>
+                            </div>
+                            <div class="free-tool-mock-body">
+                                <div class="q">@dev_user · asked: <em>"anyone shipping browser agents actually reliably?"</em></div>
+                                <div class="reply">Drafted reply: <strong>"We hit the same wall with Playwright — our fix was a context layer of site playbooks loaded by URL. Happy to share what stuck."</strong></div>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 13px; color: var(--green); font-weight: 700; margin-top: 14px;">Try it free &rarr;</p>
                     </a>
 
                     <a class="path-card" href="https://tools.hanzilla.co" target="_blank" rel="noreferrer" style="text-decoration: none; color: inherit; display: block; background: transparent; border-style: dashed;" aria-label="Explore more free tools (opens in new tab)">
