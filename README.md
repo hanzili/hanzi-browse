@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/hanzili-hanzi-browse-badge.png)](https://mseep.ai/app/hanzili-hanzi-browse)
+
 <div align="center">
 
 [English](README.md) | [中文](docs/zh/README.md)
