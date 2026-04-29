@@ -150,5 +150,29 @@
     "skill": "Stack Overflow patterns:\n- Question URL: stackoverflow.com/questions/{id}/{slug-title}. Always follow the redirect to the canonical slug URL before reading — anchors like #answer-{id} only resolve there.\n- Closed-question banner (.js-post-notice, .s-notice) appears at the top of closed/duplicate questions. Read it BEFORE the top answer — duplicate-marked questions link to the canonical answer, which may live on a different question.\n- Answers are sorted by votes by default; the accepted answer has a green checkmark icon (.accepted-answer / aria-label='Accepted').\n- Voting, commenting, and posting require sign-in and an internal fkey CSRF token. Scraping read-only content works unauth.\n- For pure data extraction, prefer the Stack Exchange API — free, 300 req/sec unauthenticated, no DOM churn risk.\n- Pagination on question lists: `?tab=votes&page=N&pagesize=15` query params, NOT numbered page buttons.",
     "lastVerified": null,
     "goldenTasks": "evals/domain/stackoverflow.com.yaml"
+  },
+  {
+    "domain": "vercel.com",
+    "skill": "Vercel dashboard navigation:\n- Left sidebar: Projects, Deployments, Logs, Analytics, Speed Insights, Observability, Firewall, CDN, Environment Variables, Domains, Integrations, Storage, Flags, Agent, AI Gateway, Sandboxes, Workflows, Usage, Settings\n- Project overview shows: Production Deployment card (status, domain, source branch, commit), Deployment Settings, Observability metrics (Edge Requests, Function Invocations, Error Rate), Analytics, Active Branches\n- To create a project: click 'Add New...' → Import Git Repository or use v0 prompt input\n- New project config: set Team, Project Name, Application Preset (e.g. Vite), Root Directory, Build Command, Output Directory, Install Command, Environment Variables\n- Production deploy triggered by pushing to main branch\n- Instant Rollback button available on project overview for quick revert\n- URL pattern: vercel.com/{team}/projects for dashboard, vercel.com/{team}/{project} for project overview",
+    "lastVerified": "2026-04-29",
+    "goldenTasks": "evals/domain/vercel.com.yaml"
+  },
+  {
+    "domain": "netlify.com",
+    "skill": "Netlify dashboard navigation:\n- Left sidebar: Project overview, Project configuration, Deploys, Preview Servers, Agent runs, Logs & metrics, Web security, Domain management, Forms, Blobs, Database\n- Deploy details page shows: deploy status (In progress/Ready/Failed), deploy log with stages (Initializing, Building, Deploying, Cleanup, Post-processing)\n- Deploy log is real-time and expandable per stage\n- URL pattern: app.netlify.com/projects/{project-name}/deploys for deploy list, app.netlify.com/projects/{project-name}/deploys/{deploy-id} for deploy details\n- To trigger deploy: push to connected git branch or use 'Trigger deploy' button\n- Cancel deploy button available during active deploys\n- Deploy settings accessible via 'Deploy settings' button",
+    "lastVerified": "2026-04-29",
+    "goldenTasks": "evals/domain/netlify.com.yaml"
+  },
+  {
+    "domain": "linear.app",
+    "skill": "Linear navigation:\n- Left sidebar: Inbox, My issues, Workspace section (Projects, Views, More), Your teams section with team name\n- Under each team: Issues, Projects, Views\n- Issues list has tabs: All issues, Active, Backlog\n- Issue rows show: issue ID (e.g. HAN-1), status circle, title, date\n- Status icons: empty circle = Todo, half circle = In Progress, checkmark = Done\n- To create issue: click '+' button at top right of issues list or use keyboard shortcut C\n- Issue ID format: {TEAM_PREFIX}-{NUMBER} (e.g. HAN-1, HAN-2)\n- Search: click search icon at top of sidebar\n- URL pattern: linear.app/{workspace}/team/{team}/issues for issues list",
+    "lastVerified": "2026-04-29",
+    "goldenTasks": "evals/domain/linear.app.yaml"
+  },
+  {
+    "domain": "atlassian.net",
+    "skill": "Jira (atlassian.net) navigation:\n- Left sidebar: For you, Recent, Starred, Apps, Plans, Spaces, team spaces list\n- Project views tabs: Summary, List, Board, Code, Forms, Timeline, Pages\n- Board view shows kanban columns: TO DO, IN PROGRESS, IN REVIEW, DONE\n- Each card shows: task title, due date, assignee avatar, ticket ID (e.g. KAN-1)\n- To create issue: click '+ Create' button in top navigation bar\n- Drag cards between columns to update status\n- Search: click search bar at top center of page\n- Filter button available on board view to filter by assignee or other criteria\n- URL pattern: {workspace}.atlassian.net/jira/software/projects/{project}/boards for board view",
+    "lastVerified": "2026-04-29",
+    "goldenTasks": "evals/domain/atlassian.net.yaml"
   }
 ]
